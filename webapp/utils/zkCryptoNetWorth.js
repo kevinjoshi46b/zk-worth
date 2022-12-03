@@ -133,9 +133,9 @@ const setRequestMetadata = async (
     }
 }
 
-const getLatesId = async () => {
+const getLatestId = async () => {
     try {
-        const result = await providerContract.getLatestId()
+        const result = await signerContract.getLatestId()
         return { success: true, result }
     } catch (error) {
         return { success: false, error }
@@ -207,7 +207,7 @@ export {
     removeSecondaryWalletAddress,
     getSecondaryWalletAddresses,
     setRequestMetadata,
-    getLatesId,
+    getLatestId,
     getRequestMetadata,
     getRequestMetadatas,
     setRequests,
