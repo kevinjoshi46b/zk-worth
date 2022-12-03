@@ -3,12 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@fontsource/roboto": "^4.5.8",
+    "@mui/icons-material": "^5.10.16",
+    "@mui/lab": "^5.0.0-alpha.110",
+    "@mui/material": "^5.10.16",
+    "@mui/styled-engine-sc": "^5.10.16",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "@web3modal/ethereum": "^2.0.0-beta.7",
+    "@web3modal/react": "^2.0.0-beta.7",
+    "axios": "^1.2.0",
+    "chart.js": "^4.0.1",
+    "ethers": "^5.7.2",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.0.1",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.4.4",
     "react-scripts": "5.0.1",
+    "styled-components": "^5.3.6",
+    "wagmi": "^0.8.10",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -35,5 +51,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "proxy": "http://localhost:5000"
 }
