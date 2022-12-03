@@ -2,12 +2,14 @@ import express from "express"
 import path from "path"
 import { NODE_ENV, PORT } from "./env.js"
 import authRoutes from './routes/authRoutes.js'
+import walletsRoutes from './routes/walletsRoutes.js'
 
 const app = express()
 
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)
+app.use('/api/wallets', walletsRoutes)
 
 const __dirname = path.resolve()
 
