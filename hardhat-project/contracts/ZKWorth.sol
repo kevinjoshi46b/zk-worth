@@ -7,7 +7,7 @@ contract ZKWorth is Ownable {
     struct RequestMetadata {
         string sender;
         string receiver;
-        uint256 threshold;
+        string threshold;
         int8 status;
         bool result;
         bytes32 proof;
