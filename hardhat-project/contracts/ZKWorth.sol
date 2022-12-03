@@ -10,7 +10,7 @@ contract ZKWorth is Ownable {
         uint256 threshold;
         int8 status;
         bool result;
-        bytes32 proof;
+        string proof;
     }
 
     struct User {
@@ -26,27 +26,27 @@ contract ZKWorth is Ownable {
 
     mapping(string => User) internal accounts;
 
-    function isUniquePublicKey(
-        string calldata _publicKey
-    ) external view returns (bool) {
-        bytes32 _hashedPublicKey = keccak256(abi.encodePacked(_publicKey));
-        for (uint256 _i = 0; _i < publicKeys.length; ) {
-            if (
-                _hashedPublicKey == keccak256(abi.encodePacked(publicKeys[_i]))
-            ) {
-                return false;
+        function isUniquePublicKey(
+            string calldata _publicKey
+        ) external view returns (bool) {
+            bytes32 _hashedPublicKey = keccak256(abi.encodePacked(_publicKey));
+            for (uint256 _i = 0; _i < publicKeys.length; ) {
+                if (
+                    _hashedPublicKey == keccak256(abi.encodePacked(publicKeys[_i]))
+                ) {
+                    return false;
+                }
+                unchecked {
+                    _i++;
+                }
             }
-            unchecked {
-                _i++;
-            }
+            return true;
         }
-        return true;
-    }
 
     function isUniqueUsername(
         string calldata _username
     ) external view returns (bool) {
-        if (accounts[_username].publicKey != 0) {
+        if (accounts[_username].publicKey == 0) {
             return true;
         } else {
             return false;
@@ -105,7 +105,7 @@ contract ZKWorth is Ownable {
             "Account with the given username does not exist"
         );
         require(
-            bytes(_secondaryWalletAddress).length == 0,
+            bytes(_secondaryWalletAddress).length != 0,
             "Secondary wallet address not provided"
         );
         accounts[_username].secondaryWalletAddresses.push(
@@ -136,7 +136,7 @@ contract ZKWorth is Ownable {
                 keccak256(abi.encodePacked(secondaryWalletAddresses[_i]))
             ) {
                 secondaryWalletAddresses[_i] = secondaryWalletAddresses[
-                    secondaryWalletAddresses.length
+                    secondaryWalletAddresses.length - 1
                 ];
                 secondaryWalletAddresses.pop();
                 break;
@@ -160,11 +160,10 @@ contract ZKWorth is Ownable {
         uint256 _threshold,
         int8 _status,
         bool _result,
-        bytes32 _proof
-    ) external onlyOwner returns (uint256) {
+        string calldata _proof
+    ) external onlyOwner {
         require(bytes(_sender).length != 0, "Request sender not provided");
         require(bytes(_receiver).length != 0, "Request receiver not provided");
-        uint256 _newId;
         if (_id == 0) {
             requestMetadata.push(
                 RequestMetadata(
@@ -176,7 +175,6 @@ contract ZKWorth is Ownable {
                     _proof
                 )
             );
-            _newId = requestMetadata.length;
         } else {
             require(_id <= requestMetadata.length, "Invalid id provided");
             RequestMetadata storage _metadata = requestMetadata[_id - 1];
@@ -186,9 +184,11 @@ contract ZKWorth is Ownable {
             _metadata.status = _status;
             _metadata.result = _result;
             _metadata.proof = _proof;
-            _newId = _id;
         }
-        return _newId;
+    }
+
+    function getLatestId() external view onlyOwner returns (uint256) {
+        return requestMetadata.length;
     }
 
     function getRequestMetadata(
