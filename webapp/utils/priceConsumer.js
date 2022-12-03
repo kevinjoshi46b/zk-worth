@@ -4,8 +4,8 @@ import {
     ALCHEMY_POLYGONMUMBAI,
     WALLET_PRIVATE_KEY,
 } from "../env.js"
-import priceConsumerGoerli from "./contracts/priceConsumerGoerli.json"
-import priceConsumerPolygonMumbai from "./contracts/priceConsumerPolygonMumbai.json"
+import priceConsumerGoerli from "./contracts/priceConsumerGoerli.json" assert {type: 'json'}
+import priceConsumerPolygonMumbai from "./contracts/priceConsumerPolygonMumbai.json" assert {type: 'json'}
 
 const providerGoerli = new ethers.providers.JsonRpcProvider(ALCHEMY_GOERLI)
 const providerGoerliContract = new ethers.Contract(

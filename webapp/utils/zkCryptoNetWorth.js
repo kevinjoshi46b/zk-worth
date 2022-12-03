@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { ALCHEMY_POLYGONMUMBAI, WALLET_PRIVATE_KEY } from "../env.js"
-import zKCryptoNetWorth from "./contracts/zKCryptoNetWorth.json"
+import zKCryptoNetWorth from "./contracts/zKWorthPolygonMumbai.json" assert {type: 'json'}
 
 const provider = new ethers.providers.JsonRpcProvider(ALCHEMY_POLYGONMUMBAI)
 const providerContract = new ethers.Contract(
@@ -133,9 +133,9 @@ const setRequestMetadata = async (
     }
 }
 
-const getLatesId = async () => {
+const getLatestId = async () => {
     try {
-        const result = await providerContract.getLatestId()
+        const result = await signerContract.getLatestId()
         return { success: true, result }
     } catch (error) {
         return { success: false, error }
@@ -207,7 +207,7 @@ export {
     removeSecondaryWalletAddress,
     getSecondaryWalletAddresses,
     setRequestMetadata,
-    getLatesId,
+    getLatestId,
     getRequestMetadata,
     getRequestMetadatas,
     setRequests,

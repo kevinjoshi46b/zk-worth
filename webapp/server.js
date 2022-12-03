@@ -4,6 +4,7 @@ import { NODE_ENV, PORT } from "./env.js"
 import authRoutes from './routes/authRoutes.js'
 import walletsRoutes from './routes/walletsRoutes.js'
 import dashboardRoutes from './routes/dashboardRoutes.js'
+import requestsRoutes from './routes/requestsRoutes.js'
 
 const app = express()
 
@@ -12,6 +13,7 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/wallets', walletsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use("/api/requests", requestsRoutes)
 
 const __dirname = path.resolve()
 
