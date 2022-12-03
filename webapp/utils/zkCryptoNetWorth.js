@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { ALCHEMY_POLYGONMUMBAI, WALLET_PRIVATE_KEY } from "../env.js"
-import zKCryptoNetWorthGoerli from "./contracts/zKCryptoNetWorthGoerli.json" assert { type: "json" }
+import zKCryptoNetWorthGoerli from "./contracts/zKCryptoNetWorth.json" assert { type: "json" }
 
 const provider = new ethers.providers.JsonRpcProvider(ALCHEMY_POLYGONMUMBAI)
 const providerContract = new ethers.Contract(
@@ -24,6 +24,27 @@ const setAccount = async (username, publicKey, primaryWalletAddress) => {
     }
 }
 
+const isUniquePublicKey = async (publicKey) => {
+    try {
+        const result = await providerContract.isUniquePublicKey(publicKey)
+        return { success: true, result }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
+
+const isUniqueUsername = async (username) => {
+    try {
+        const result = await providerContract.isUniqueUsername(username)
+        return { success: true, result }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
+
+
 export {
-    setAccount
+    setAccount,
+    isUniquePublicKey,
+    isUniqueUsername
 }
