@@ -8,11 +8,23 @@ const config: HardhatUserConfig = {
     solidity: {
         compilers: [
             {
+                version: "0.8.0",
+            },
+            {
                 version: "0.8.17",
             },
         ],
     },
     networks: {
+        hardhat: {
+            forking: {
+                url: process.env.ALCHEMY_POLYGONMUMBAI || "",
+            },
+        },
+        goerli: {
+            url: process.env.ALCHEMY_GOERLI || "",
+            accounts: [process.env.WALLET_PRIVATE_KEY || ""],
+        },
         polygonMumbai: {
             url: process.env.ALCHEMY_POLYGONMUMBAI || "",
             accounts: [process.env.WALLET_PRIVATE_KEY || ""],
@@ -20,6 +32,7 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: {
+            goerli: process.env.ETHERSCAN_API_KEY || "",
             polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
         },
     },

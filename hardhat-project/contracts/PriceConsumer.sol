@@ -9,17 +9,28 @@ contract PriceConsumer is Ownable {
     // Token mapped to its TOKEN/USD chainlink feed
     mapping(address => address) feeds;
 
+    event SetFeeds(
+        address indexed _owner,
+        uint256 _feedsChanged,
+        address[] _tokens,
+        address[] _feeds
+    );
+
     // Chainlink-specific
     function setFeeds(address[] calldata _tokens, address[] calldata _feeds)
         external
         onlyOwner
     {
+        require(_tokens.length > 0, "Tokens array length is zero");
+        require(_feeds.length > 0, "Feeds array length is zero");
+        require(_tokens.length == _feeds.length, "Arrays length mismatch");
         for (uint256 i = 0; i < _tokens.length; ) {
             feeds[_tokens[i]] = _feeds[i];
             unchecked {
                 i++;
             }
         }
+        emit SetFeeds(msg.sender, _tokens.length, _tokens, _feeds);
     }
 
     function getPrice(address _token) public view returns (int256) {
