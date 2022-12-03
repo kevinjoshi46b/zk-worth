@@ -17,10 +17,10 @@ contract PriceConsumer is Ownable {
     );
 
     // Chainlink-specific
-    function setFeeds(address[] calldata _tokens, address[] calldata _feeds)
-        external
-        onlyOwner
-    {
+    function setFeeds(
+        address[] calldata _tokens,
+        address[] calldata _feeds
+    ) external onlyOwner {
         require(_tokens.length > 0, "Tokens array length is zero");
         require(_feeds.length > 0, "Feeds array length is zero");
         require(_tokens.length == _feeds.length, "Arrays length mismatch");
@@ -43,11 +43,9 @@ contract PriceConsumer is Ownable {
         return price;
     }
 
-    function getPrices(address[] calldata _tokens)
-        external
-        view
-        returns (int256[] memory)
-    {
+    function getPrices(
+        address[] calldata _tokens
+    ) external view returns (int256[] memory) {
         int256[] memory prices = new int256[](_tokens.length);
         for (uint256 i = 0; i < _tokens.length; ) {
             prices[i] = getPrice(_tokens[i]);
@@ -63,19 +61,17 @@ contract PriceConsumer is Ownable {
         return address(_user).balance;
     }
 
-    function getBalance(address _user, address _token)
-        public
-        view
-        returns (uint256)
-    {
+    function getBalance(
+        address _user,
+        address _token
+    ) public view returns (uint256) {
         return IERC20(_token).balanceOf(_user);
     }
 
-    function getBalances(address _user, address[] calldata _tokens)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function getBalances(
+        address _user,
+        address[] calldata _tokens
+    ) external view returns (uint256[] memory) {
         uint256[] memory _balances = new uint256[](_tokens.length);
         for (uint256 i = 0; i < _tokens.length; ) {
             _balances[i] = getBalance(_user, _tokens[i]);
