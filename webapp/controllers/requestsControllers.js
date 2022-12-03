@@ -6,7 +6,7 @@ import {
     getRequestMetadata,
     setRequestMetadata,
     isUniqueUsername,
-    getLatesId,
+    getLatestId,
     getPublicKey,
     setRequests,
 } from "../utils/zKCryptoNetWorth.js"
@@ -286,7 +286,7 @@ const getOutgoingRequestsController = expressAsyncHandler(
     }
 )
 
-const setRequestController = expressAsyncHandler(async (req, res, next) => {
+const setRequestController = expressAsyncHandler(async (req, res) => {
     const { receiver, threshold } = req.body
     if (receiver == undefined) {
         return res.status(200).json({
@@ -343,13 +343,19 @@ const setRequestController = expressAsyncHandler(async (req, res, next) => {
         "-"
     )
     if (setRequestMetadataResult.success) {
-        const idResult = await getLatesId()
+        const idResult = await getLatestId()
         if (idResult.success) {
             const setRequestResult = await setRequests(
                 req.user.username.username,
-                encrypt(senderPublicKeyResult.result, idResult.result),
+                encrypt(
+                    senderPublicKeyResult.result,
+                    idResult.result.toString()
+                ),
                 receiver,
-                encrypt(receiverPublicKeyResult.result, idResult.result)
+                encrypt(
+                    receiverPublicKeyResult.result,
+                    idResult.result.toString()
+                )
             )
             if (setRequestResult.success) {
                 return res
