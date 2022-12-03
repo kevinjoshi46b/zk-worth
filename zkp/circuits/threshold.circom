@@ -7,7 +7,7 @@ template threshold () {
     signal input threshold;
     signal output result;
 
-    component compare = GreaterThan(250);
+    component compare = GreaterEqThan(250);
 
     compare.in[0] <== netWorth;
     compare.in[1] <== threshold;

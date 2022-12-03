@@ -1,6 +1,6 @@
 node_modules
-netWorthThreshold_js
-netWorthThreshold.r1cs
-netWorthThreshold_0000.zkey
-netWorthThreshold_final.zkey
+threshold_js
+threshold.r1cs
+threshold_0000.zkey
+threshold_final.zkey
 verifier.sol
