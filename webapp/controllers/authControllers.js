@@ -1,11 +1,81 @@
+import { ethers } from "ethers"
 import expressAsyncHandler from 'express-async-handler'
 import {
+    isUniqueUsername,
+    getPrimaryWalletAddress,
+    isUniquePublicKey,
     setAccount,
 } from "../utils/zKCryptoNetWorth.js"
-import { genKeys, encrypt } from "../utils/cryptography.js"
+import { generateToken } from "../utils/jwt.js"
+import { genKeys, encrypt, decrypt } from "../utils/cryptography.js"
+import { ADMIN_USERNAMES } from "../env.js"
 
-const login = expressAsyncHandler(async (req, res, next) => {
-    return res.send("Login route")
+const login = expressAsyncHandler(async (req, res) => {
+    const { username, primaryWalletAddress, password } = req.body
+
+    if (ethers.utils.isAddress(primaryWalletAddress)) {
+        if (password.length == 1704) {
+
+            let primaryWalletAddressFetched = await getPrimaryWalletAddress(
+                username
+            )
+
+            console.log(primaryWalletAddressFetched)
+
+            if (primaryWalletAddressFetched.success) {
+                try {
+                    const decryptedPrimaryWalletAddress = decrypt(
+                        password,
+                        primaryWalletAddressFetched.result
+                    )
+                    if (primaryWalletAddress == decryptedPrimaryWalletAddress) {
+                        
+                        let isAdmin = ADMIN_USERNAMES.includes(username)
+
+                        return res.status(200).json({
+                            message: "Authenticated successfully!",
+                            data: {
+                                token: generateToken({
+                                    username,
+                                    privateKey: password,
+                                    isAdmin,
+                                }),
+                            },
+                        })
+                    } else {
+                        return res.status(401).json({
+                            error: "Invalid credentials provided",
+                            message:
+                                "The password or the primary wallet address do not match with the username provided",
+                        })
+                    }
+                } catch (error) {
+                    return res.status(401).json({
+                        error: "Invalid password",
+                        message:
+                            "The password provided is incorrect or corrupted",
+                    })
+                }
+            } else {
+                return res.status(500).json({
+                    error: "Primary wallet address fetch from blockchain failed",
+                    message: "Please try again",
+                })
+            }
+        } else {
+            return res.status(401).json({
+                error: "Invalid password",
+                message: "The password provided is incorrect or corrupted",
+            })
+        }
+    } else {
+        return res.status(401).json({
+            error: "Invalid primary wallet address",
+            message:
+                "The primary wallet address provided is not a valid wallet address",
+        })
+    }
+
 })
 
 const signup = expressAsyncHandler(async (req, res) => {
