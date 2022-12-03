@@ -6,7 +6,7 @@ import {
 } from "./zKCryptoNetWorth.js"
 import { decrypt } from "./cryptography.js"
 
-// These constants can be updated when support for more netowrks or coins is added
+// These constants can be updated when support for more networks or coins is added
 const pricesRef = [
     {
         network: "polygonMumbai",
