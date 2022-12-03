@@ -13,6 +13,25 @@ import { ADMIN_USERNAMES } from "../env.js"
 const login = expressAsyncHandler(async (req, res) => {
     const { username, primaryWalletAddress, password } = req.body
 
+    if (username == undefined) {
+        return res.status(400).json({
+            error: "Authentication data missing",
+            message: "Username is not provided",
+        })
+    }
+    if (primaryWalletAddress == undefined) {
+        return res.status(400).json({
+            error: "Authentication data missing",
+            message: "Primary wallet address is not provided",
+        })
+    }
+    if (password == undefined) {
+        return res.status(400).json({
+            error: "Authentication data missing",
+            message: "Password is not provided",
+        })
+    }
+
     if (ethers.utils.isAddress(primaryWalletAddress)) {
         if (password.length == 1704) {
 
@@ -29,7 +48,7 @@ const login = expressAsyncHandler(async (req, res) => {
                         primaryWalletAddressFetched.result
                     )
                     if (primaryWalletAddress == decryptedPrimaryWalletAddress) {
-                        
+
                         let isAdmin = ADMIN_USERNAMES.includes(username)
 
                         return res.status(200).json({
