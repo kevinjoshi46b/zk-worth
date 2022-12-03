@@ -16,7 +16,7 @@
   },
   "scripts": {
     "deps-dev-install": "yarn install && cd frontend && yarn install",
-    "server": "nodemon -r dotenv/config server.js",
+    "server": "nodemon --experimental-json-modules -r dotenv/config server.js",
     "fullstack": "cd frontend && yarn build && cd ../ && nodemon -r dotenv/config server.js",
     "client": "cd frontend && yarn start",
     "dev": "concurrently \"yarn server\" \"yarn client\""
