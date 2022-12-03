@@ -5,6 +5,7 @@ const ALCHEMY_POLYGONMUMBAI = process.env.ALCHEMY_POLYGONMUMBAI || ""
 const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || ""
 const ADMIN_USERNAMES = process.env.ADMIN_USERNAMES ? JSON.parse(process.env.ADMIN_USERNAMES) : []
 const JWT_KEY = process.env.JWT_KEY || ""
+const IPFS_TOKEN = process.env.IPFS_TOKEN || ""
 
 export {
     NODE_ENV,
@@ -13,5 +14,6 @@ export {
     ALCHEMY_POLYGONMUMBAI,
     WALLET_PRIVATE_KEY,
     ADMIN_USERNAMES,
-    JWT_KEY
+    JWT_KEY,
+    IPFS_TOKEN
 }
