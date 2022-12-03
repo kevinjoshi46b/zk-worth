@@ -6,6 +6,7 @@ const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || ""
 const ADMIN_USERNAMES = process.env.ADMIN_USERNAMES ? JSON.parse(process.env.ADMIN_USERNAMES) : []
 const JWT_KEY = process.env.JWT_KEY || ""
 const IPFS_TOKEN = process.env.IPFS_TOKEN || ""
+const COV_API_KEY = process.env.COV_API_KEY || ""
 
 export {
     NODE_ENV,
@@ -15,5 +16,6 @@ export {
     WALLET_PRIVATE_KEY,
     ADMIN_USERNAMES,
     JWT_KEY,
-    IPFS_TOKEN
+    IPFS_TOKEN,
+    COV_API_KEY,
 }
