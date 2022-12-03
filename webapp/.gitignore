@@ -32,3 +32,5 @@ cache
 artifacts
 
 ./contracts/zKCryptoNetWorth.json
+./contracts/priceConsumerGoerli.json
+./contracts/priceConsumerPolygonMumbai.json

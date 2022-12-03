@@ -118,7 +118,7 @@ const setRequestMetadata = async (
     proof
 ) => {
     try {
-        const result = await signerContract.setRequestMetadata(
+        await signerContract.setRequestMetadata(
             id,
             sender,
             receiver,
