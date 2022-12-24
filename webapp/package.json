@@ -5,24 +5,26 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "crypto-js": "^4.1.1",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
+    "jsonwebtoken": "^8.5.1",
     "snarkjs": "^0.5.0",
-    "web3.storage": "^4.4.0",
-    "crypto-js": "^4.1.1",
-    "jsonwebtoken": "^8.5.1"
+    "web3.storage": "^4.4.0"
   },
   "devDependencies": {
-    "concurrently": "^7.6.0",
+    "concurrently": "^7.5.0",
     "dotenv": "^16.0.3",
     "nodemon": "^2.0.20"
   },
   "scripts": {
     "deps-dev-install": "yarn install && cd frontend && yarn install",
-    "server": "nodemon --experimental-json-modules -r dotenv/config server.js",
-    "fullstack": "cd frontend && yarn build && cd ../ && nodemon -r dotenv/config server.js",
+    "server": "nodemon -r dotenv/config server.js",
     "client": "cd frontend && yarn start",
-    "dev": "concurrently \"yarn server\" \"yarn client\""
+    "dev": "concurrently \"yarn server\" \"yarn client\"",
+    "deps-prod-install": "yarn install --production && cd frontend && yarn install --production",
+    "build": "cd frontend && yarn build",
+    "start": "node server.js"
   }
 }
