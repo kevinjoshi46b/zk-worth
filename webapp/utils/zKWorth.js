@@ -11,19 +11,6 @@ const providerContract = new ethers.Contract(
 const wallet = new ethers.Wallet(WALLET_PRIVATE_KEY, provider)
 const signerContract = providerContract.connect(wallet)
 
-const setAccount = async (username, publicKey, primaryWalletAddress) => {
-    try {
-        await signerContract.setAccount(
-            username,
-            publicKey,
-            primaryWalletAddress
-        )
-        return { success: true }
-    } catch (error) {
-        return { success: false, error }
-    }
-}
-
 const isUniquePublicKey = async (publicKey) => {
     try {
         const result = await providerContract.isUniquePublicKey(publicKey)
@@ -42,6 +29,19 @@ const isUniqueUsername = async (username) => {
     }
 }
 
+const setAccount = async (username, publicKey, primaryWalletAddress) => {
+    try {
+        const result = await signerContract.setAccount(
+            username,
+            publicKey,
+            primaryWalletAddress
+        )
+        await result.wait(1)
+        return { success: true }
+    } catch (error) {
+        return { success: false, error }
+    }
+}
 
 const getAccount = async (username) => {
     try {
@@ -72,10 +72,11 @@ const getPrimaryWalletAddress = async (username) => {
 
 const setSecondaryWalletAddress = async (username, secondaryWalletAddress) => {
     try {
-        await signerContract.setSecondaryWalletAddress(
+        const result = await signerContract.setSecondaryWalletAddress(
             username,
             secondaryWalletAddress
         )
+        await result.wait(1)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -87,10 +88,11 @@ const removeSecondaryWalletAddress = async (
     secondaryWalletAddress
 ) => {
     try {
-        await signerContract.removeSecondaryWalletAddress(
+        const result = await signerContract.removeSecondaryWalletAddress(
             username,
             secondaryWalletAddress
         )
+        await result.wait(1)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -118,7 +120,7 @@ const setRequestMetadata = async (
     proof
 ) => {
     try {
-        await signerContract.setRequestMetadata(
+        const result = await signerContract.setRequestMetadata(
             id,
             sender,
             receiver,
@@ -127,6 +129,7 @@ const setRequestMetadata = async (
             reqResult,
             proof
         )
+        await result.wait(1)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -162,7 +165,13 @@ const getRequestMetadatas = async (ids) => {
 
 const setRequests = async (sender, senderId, receiver, receiverId) => {
     try {
-        await signerContract.setRequests(sender, senderId, receiver, receiverId)
+        const result = await signerContract.setRequests(
+            sender,
+            senderId,
+            receiver,
+            receiverId
+        )
+        await result.wait(1)
         return { success: true }
     } catch (error) {
         return { success: false, error }
@@ -197,9 +206,9 @@ const getOutgoingRequests = async (username) => {
 }
 
 export {
-    setAccount,
     isUniquePublicKey,
     isUniqueUsername,
+    setAccount,
     getAccount,
     getPublicKey,
     getPrimaryWalletAddress,

@@ -3,7 +3,7 @@ import { getPrices, getNativeBalance, getBalances } from "./priceConsumer.js"
 import {
     getPrimaryWalletAddress,
     getSecondaryWalletAddresses,
-} from "./zKCryptoNetWorth.js"
+} from "./zKWorth.js"
 import { decrypt } from "./cryptography.js"
 
 // These constants can be updated when support for more networks or coins is added
