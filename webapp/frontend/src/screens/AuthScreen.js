@@ -1,70 +1,133 @@
 import { useState, useEffect } from "react"
+import logo from "../logo.png"
 import Box from "@mui/material/Box"
 import { Typography } from "@mui/material"
-import { useWeb3Modal } from "@web3modal/react"
-import { useAccount } from "wagmi"
 import { useTheme } from "@mui/material/styles"
 import LoadingButton from "@mui/lab/LoadingButton"
 import WalletRoundedIcon from "@mui/icons-material/WalletRounded"
-import logo from "../logo.png"
+import LoginIcon from "@mui/icons-material/Login"
+import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded"
+import FileUploadIcon from "@mui/icons-material/FileUpload"
+import TextField from "@mui/material/TextField"
+import Snackbar from "@mui/material/Snackbar"
+import Alert from "@mui/material/Alert"
+import { shortner } from "../utils/walletAddressShortner"
 import { useNavigate } from "react-router-dom"
 import { useCookies } from "react-cookie"
 import axios from "axios"
+import { useWeb3Modal } from "@web3modal/react"
+import { useAccount } from "wagmi"
 
 const AuthScreen = () => {
     const theme = useTheme()
-    const { isOpen, open } = useWeb3Modal()
-    const { address, isConnecting, isConnected } = useAccount()
+    const { open } = useWeb3Modal()
+    const { address } = useAccount()
     const navigate = useNavigate()
-    const [cookies, setCookie] = useCookies([])
-    const [isLoading, setIsLoading] = useState(false)
+    const [cookies, setCookie, removeCookie] = useCookies([])
+    const [isSnackbarOpen, setIsSnackbarOpen] = useState(false)
+    const [snackbarSeverity, setSnackbarSeverity] = useState("error")
+    const [snackbarMessage, setSnackbarMessage] = useState("")
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState()
+    const [passwordFileName, setPasswordFileName] = useState("")
+    const [disableInput, setDisableInput] = useState(false)
+    const [submitLoading, setSubmitLoading] = useState(false)
 
     useEffect(() => {
-        if (cookies.Auth) return navigate("/dashboard", { replace: true })
+        if (cookies.token) return navigate("/dashboard", { replace: true })
+        if (cookies.snackbar) {
+            setSnackbarSeverity(cookies.snackbar.snackbarSeverity)
+            setSnackbarMessage(cookies.snackbar.snackbarMessage)
+            setIsSnackbarOpen(true)
+            removeCookie("snackbar", { path: "/" })
+        }
     }, [])
 
+    const closeSnackBar = () => {
+        setIsSnackbarOpen(false)
+    }
+
+    function uploadPasswordFile(event) {
+        const fileNameSplit = event.target.files[0].name.split(".")
+        if (fileNameSplit[fileNameSplit.length - 1] == "pem") {
+            setPassword(event.target.files[0])
+            setPasswordFileName(event.target.files[0].name)
+        } else {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                "Only .pem file can be uploaded! Make sure you are uploading the correct password file"
+            )
+            setIsSnackbarOpen(true)
+        }
+    }
+
     const authenticate = async () => {
-        let resp = await axios({
+        setDisableInput(true)
+        setSubmitLoading(true)
+        if (username == "") {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Username not provided!")
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
+            return
+        }
+        if (password == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Password file not provided!")
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
+            return
+        }
+        if (address == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Wallet not connected!")
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
+            return
+        }
+        const resp = await axios({
             method: "post",
             url: "/api/auth",
             headers: {},
             data: {
-                walletAddress: address,
+                username,
+                primaryWalletAddress: address,
+                password: await password.text(),
             },
         })
-        if (resp.data.exists) {
+        if (!("error" in resp.data)) {
+            setCookie("token", resp.data.token, {
+                path: "/",
+                maxAge: 86400,
+            })
+            setCookie("username", username, {
+                path: "/",
+                maxAge: 86400,
+            })
             setCookie(
-                "Auth",
-                JSON.stringify({
-                    username: resp.data.username,
-                    walletAddress: resp.data.walletAddress,
-                }),
+                "snackbar",
                 {
-                    path: "/",
-                }
+                    snackbarSeverity: "success",
+                    snackbarMessage: "Authenticated successfully!",
+                },
+                { path: "/" }
             )
-            return navigate("/dashboard", { replace: true })
+            return navigate("/dashboard")
         } else {
-            return navigate("/signup", { replace: true })
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                (resp.data.error ? resp.data.error : "") +
+                    ": " +
+                    (resp.data.message ? resp.data.message : "")
+            )
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
         }
     }
-
-    useEffect(() => {
-        if (isConnecting) {
-            if (!isOpen) {
-                setIsLoading(false)
-            } else {
-                setIsLoading(true)
-            }
-        } else {
-            if (isConnected) {
-                setIsLoading(true)
-                authenticate()
-            } else {
-                setIsLoading(false)
-            }
-        }
-    }, [isConnected, isConnecting, isOpen])
 
     return (
         <Box
@@ -72,11 +135,26 @@ const AuthScreen = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                mt: "100px",
+                mt: "80px",
+                mb: "40px",
             }}
         >
+            <Snackbar
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                open={isSnackbarOpen}
+                onClose={closeSnackBar}
+                autoHideDuration={6000}
+            >
+                <Alert
+                    onClose={closeSnackBar}
+                    severity={snackbarSeverity}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage ? snackbarMessage : ""}
+                </Alert>
+            </Snackbar>
             <Box
-                sx={{ display: "flex", flexDirection: "row", mb: "120px" }}
+                sx={{ display: "flex", flexDirection: "row", mb: "80px" }}
                 alignItems="center"
             >
                 <img
@@ -92,7 +170,7 @@ const AuthScreen = () => {
                     variant="h6"
                     sx={{ fontWeight: "bold", mx: "10px" }}
                 >
-                    KryptoAssetZ
+                    ZK Worth
                 </Typography>
             </Box>
             <Typography variant="h4" sx={{ fontWeight: "bold", mb: "30px" }}>
@@ -107,24 +185,125 @@ const AuthScreen = () => {
                     padding: "20px",
                 }}
             >
+                {disableInput ? (
+                    <TextField
+                        value={username}
+                        id="username"
+                        label="Username"
+                        sx={{ width: "100%" }}
+                        disabled
+                    />
+                ) : (
+                    <TextField
+                        value={username}
+                        id="username"
+                        label="Username"
+                        sx={{ width: "100%" }}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                )}
+                <TextField
+                    value={passwordFileName}
+                    id="passwordFileName"
+                    label="Password"
+                    sx={{ width: "100%", mt: "20px" }}
+                    disabled
+                />
+                <label htmlFor="password">
+                    <input
+                        style={{ display: "none" }}
+                        id="password"
+                        name="password"
+                        type="file"
+                        accept=".pem"
+                        onChange={uploadPasswordFile}
+                    />
+                    {disableInput ? (
+                        <LoadingButton
+                            variant="outlined"
+                            component="span"
+                            sx={{
+                                borderRadius: 2,
+                                fontWeight: "bold",
+                                width: "280px",
+                                paddingY: "10px",
+                                mt: "20px",
+                            }}
+                            startIcon={<FileUploadIcon />}
+                            disabled
+                        >
+                            Upload Password
+                        </LoadingButton>
+                    ) : (
+                        <LoadingButton
+                            variant="outlined"
+                            component="span"
+                            sx={{
+                                borderRadius: 2,
+                                fontWeight: "bold",
+                                width: "280px",
+                                paddingY: "10px",
+                                mt: "20px",
+                            }}
+                            startIcon={<FileUploadIcon />}
+                        >
+                            Upload Password
+                        </LoadingButton>
+                    )}
+                </label>
+                <TextField
+                    value={address != undefined ? shortner(address) : ""}
+                    id="walletAddress"
+                    label="Wallet Address"
+                    sx={{ width: "100%", mb: "20px", mt: "20px" }}
+                    disabled
+                />
                 <LoadingButton
-                    color="primary"
                     onClick={() => {
-                        setIsLoading(true)
                         open()
                     }}
-                    loading={isLoading}
-                    loadingPosition="start"
                     startIcon={<WalletRoundedIcon />}
+                    variant="outlined"
+                    sx={{
+                        borderRadius: 2,
+                        fontWeight: "bold",
+                        width: "280px",
+                        paddingY: "10px",
+                        mb: "20px",
+                    }}
+                >
+                    Connect Wallet
+                </LoadingButton>
+                <LoadingButton
+                    onClick={() => authenticate()}
+                    loading={submitLoading}
+                    loadingPosition="start"
+                    startIcon={<LoginIcon />}
                     variant="contained"
                     sx={{
                         borderRadius: 2,
                         fontWeight: "bold",
                         width: "280px",
                         paddingY: "10px",
+                        mt: "20px",
                     }}
                 >
-                    Connect Wallet
+                    Login
+                </LoadingButton>
+                <LoadingButton
+                    color="secondary"
+                    onClick={() => navigate("/signup")}
+                    startIcon={<AddBoxRoundedIcon />}
+                    variant="contained"
+                    sx={{
+                        borderRadius: 2,
+                        fontWeight: "bold",
+                        width: "280px",
+                        paddingY: "10px",
+                        mt: "20px",
+                    }}
+                >
+                    Signup
                 </LoadingButton>
             </Box>
         </Box>

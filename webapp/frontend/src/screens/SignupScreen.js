@@ -1,82 +1,157 @@
 import { useEffect, useState } from "react"
+import logo from "../logo.png"
 import Box from "@mui/material/Box"
 import { Typography } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
-import LoadingButton from "@mui/lab/LoadingButton"
-import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded"
 import TextField from "@mui/material/TextField"
-import logo from "../logo.png"
+import LoadingButton from "@mui/lab/LoadingButton"
+import Snackbar from "@mui/material/Snackbar"
+import Alert from "@mui/material/Alert"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import WalletRoundedIcon from "@mui/icons-material/WalletRounded"
+import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded"
+import { useWeb3Modal } from "@web3modal/react"
 import { useAccount } from "wagmi"
 import { useNavigate } from "react-router-dom"
 import { shortner } from "../utils/walletAddressShortner"
 import { useCookies } from "react-cookie"
 import axios from "axios"
+import { ethers } from "ethers"
+import zKWorthPolygonMumbai from "../contracts/zKWorthPolygonMumbai.json"
 
 const SignupScreen = () => {
     const theme = useTheme()
-    const { address, isConnected } = useAccount()
     const navigate = useNavigate()
-    const [username, setUsername] = useState("")
     const [cookies, setCookie] = useCookies([])
-
-    useEffect(() => {
-        if (cookies.Auth) return navigate("/dashboard", { replace: true })
-    }, [])
-
-    useEffect(() => {
-        if (!isConnected) {
-            return navigate("/", { replace: true })
-        }
-    }, [isConnected])
-
-    const [isUniqueUsername, setIsUniqueUsername] = useState(true)
+    const [isSnackbarOpen, setIsSnackbarOpen] = useState(false)
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success")
+    const [snackbarMessage, setSnackbarMessage] = useState("")
+    const [username, setUsername] = useState("")
+    const { open } = useWeb3Modal()
+    const { address } = useAccount()
     const [disableInput, setDisableInput] = useState(false)
     const [submitLoading, setSubmitLoading] = useState(false)
+    const [isUniqueUsernameLoading, setIsUniqueUsernameLoading] =
+        useState(false)
+
+    useEffect(() => {
+        if (cookies.token) return navigate("/dashboard", { replace: true })
+    }, [])
+
+    const closeSnackBar = () => {
+        setIsSnackbarOpen(false)
+    }
+
+    const checkUniquiness = async () => {
+        setIsUniqueUsernameLoading(true)
+        setDisableInput(true)
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const providerContract = new ethers.Contract(
+            zKWorthPolygonMumbai.address,
+            zKWorthPolygonMumbai.abi,
+            provider
+        )
+        const result = await providerContract.isUniqueUsername(username)
+        if (!result) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Username is already used!")
+        } else {
+            setSnackbarSeverity("success")
+            setSnackbarMessage("Username is unique!")
+        }
+        setIsSnackbarOpen(true)
+        setIsUniqueUsernameLoading(false)
+        setDisableInput(false)
+    }
 
     const createAccount = async () => {
         setSubmitLoading(true)
         setDisableInput(true)
-        let resp = await axios({
+        if (username == "") {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Username not provided!")
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
+            return
+        }
+        if (address == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Wallet not connected!")
+            setIsSnackbarOpen(true)
+            setDisableInput(false)
+            setSubmitLoading(false)
+            return
+        }
+        const resp = await axios({
             method: "post",
-            url: "/api/auth/createaccount",
+            url: "/api/auth/signup",
             headers: {},
             data: {
                 username: username,
-                walletAddress: address,
+                primaryWalletAddress: address,
             },
         })
-        if (resp.data.isUnique) {
-            if (resp.data.success) {
-                setCookie(
-                    "Auth",
-                    JSON.stringify({
-                        username: resp.data.username,
-                        walletAddress: resp.data.walletAddress,
-                    }),
-                    {
-                        path: "/",
-                    }
-                )
-                navigate("/dashboard", { replace: true })
-            }
+        if (!("error" in resp.data)) {
+            setIsSnackbarOpen(true)
+            const element = document.createElement("a")
+            const file = new Blob([resp.data.password], {
+                type: "text/plain",
+            })
+            element.href = URL.createObjectURL(file)
+            element.download = "Password_KryptoAssetZ.pem"
+            document.body.appendChild(element)
+            element.click()
+            URL.revokeObjectURL(element.href)
+            element.remove()
+            setCookie(
+                "snackbar",
+                {
+                    snackbarSeverity: "success",
+                    snackbarMessage:
+                        "Registered successfully! Make sure you backup the password file",
+                },
+                { path: "/" }
+            )
+            navigate("/")
         } else {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                (resp.data.error ? resp.data.error : "") +
+                    ": " +
+                    (resp.data.message ? resp.data.message : "")
+            )
+            setIsSnackbarOpen(true)
             setDisableInput(false)
             setSubmitLoading(false)
-            setIsUniqueUsername(false)
         }
     }
-
     return (
         <Box
             sx={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                mt: "100px",
+                mt: "80px",
+                mb: "40px",
             }}
         >
+            <Snackbar
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                open={isSnackbarOpen}
+                onClose={closeSnackBar}
+                autoHideDuration={6000}
+            >
+                <Alert
+                    onClose={closeSnackBar}
+                    severity={snackbarSeverity}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage ? snackbarMessage : ""}
+                </Alert>
+            </Snackbar>
             <Box
-                sx={{ display: "flex", flexDirection: "row", mb: "120px" }}
+                sx={{ display: "flex", flexDirection: "row", mb: "80px" }}
                 alignItems="center"
             >
                 <img
@@ -92,7 +167,7 @@ const SignupScreen = () => {
                     variant="h6"
                     sx={{ fontWeight: "bold", mx: "10px" }}
                 >
-                    KryptoAssetZ
+                    ZK Worth
                 </Typography>
             </Box>
             <Typography variant="h4" sx={{ fontWeight: "bold", mb: "30px" }}>
@@ -107,6 +182,30 @@ const SignupScreen = () => {
                     padding: "20px",
                 }}
             >
+                <TextField
+                    value={address != undefined ? shortner(address) : ""}
+                    id="walletAddress"
+                    label="Wallet Address"
+                    sx={{ width: "100%", mb: "20px" }}
+                    disabled
+                />
+                <LoadingButton
+                    onClick={() => {
+                        open()
+                    }}
+                    loadingPosition="start"
+                    startIcon={<WalletRoundedIcon />}
+                    variant="outlined"
+                    sx={{
+                        borderRadius: 2,
+                        fontWeight: "bold",
+                        width: "280px",
+                        paddingY: "10px",
+                        mb: "20px",
+                    }}
+                >
+                    Connect Wallet
+                </LoadingButton>
                 {disableInput ? (
                     <TextField
                         value={username}
@@ -115,34 +214,33 @@ const SignupScreen = () => {
                         sx={{ width: "100%" }}
                         disabled
                     />
-                ) : isUniqueUsername ? (
-                    <TextField
-                        value={username}
-                        id="username"
-                        label="Username"
-                        sx={{ width: "100%" }}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
                 ) : (
                     <TextField
-                        error
                         value={username}
                         id="username"
                         label="Username"
                         sx={{ width: "100%" }}
                         onChange={(e) => setUsername(e.target.value)}
-                        helperText="Username is already used!"
                     />
                 )}
-                <TextField
-                    value={address != undefined ? shortner(address) : ""}
-                    id="walletAddress"
-                    label="Wallet Address"
-                    sx={{ width: "100%", mb: "34px", mt: "20px" }}
-                    disabled
-                />
                 <LoadingButton
-                    color="primary"
+                    onClick={() => checkUniquiness()}
+                    loading={isUniqueUsernameLoading}
+                    loadingPosition="start"
+                    startIcon={<CheckCircleIcon />}
+                    variant="outlined"
+                    sx={{
+                        borderRadius: 2,
+                        fontWeight: "bold",
+                        width: "280px",
+                        paddingY: "10px",
+                        mt: "20px",
+                        mb: "20px",
+                    }}
+                >
+                    Check Username Uniqueness
+                </LoadingButton>
+                <LoadingButton
                     onClick={() => createAccount()}
                     loading={submitLoading}
                     loadingPosition="start"
@@ -153,9 +251,10 @@ const SignupScreen = () => {
                         fontWeight: "bold",
                         width: "280px",
                         paddingY: "10px",
+                        mt: "20px",
                     }}
                 >
-                    Create Account
+                    Signup
                 </LoadingButton>
             </Box>
         </Box>
