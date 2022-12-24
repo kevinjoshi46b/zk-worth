@@ -16,11 +16,8 @@ import AuthScreen from "./screens/AuthScreen"
 import SignupScreen from "./screens/SignupScreen"
 import DashboardScreen from "./screens/DashboardScreen"
 import WalletsScreen from "./screens/WalletsScreen"
-import LinkWalletScreen from "./screens/LinkWalletScreen"
 import RequestsScreen from "./screens/RequestsScreen"
 import PageNotFoundScreen from "./screens/PageNotFoundScreen"
-import SendRequestScreen from "./screens/SendRequestScreen"
-import VerifyProofScreen from "./screens/VerifyProofScreen"
 
 export const ColorModeContext = React.createContext({
     toggleColorMode: () => {},
@@ -110,33 +107,9 @@ function App() {
                                 }
                             />
                             <Route
-                                path="/wallets/linkwallet"
-                                element={
-                                    <LinkWalletScreen
-                                        drawerWidth={drawerWidth}
-                                    />
-                                }
-                            />
-                            <Route
                                 path="/requests"
                                 element={
                                     <RequestsScreen drawerWidth={drawerWidth} />
-                                }
-                            />
-                            <Route
-                                path="/requests/sendrequest"
-                                element={
-                                    <SendRequestScreen
-                                        drawerWidth={drawerWidth}
-                                    />
-                                }
-                            />
-                            <Route
-                                path="/requests/verifyproof"
-                                element={
-                                    <VerifyProofScreen
-                                        drawerWidth={drawerWidth}
-                                    />
                                 }
                             />
                             <Route
