@@ -7,7 +7,7 @@ import {
     getBalances,
 } from "../utils/priceConsumer.js"
 
-const getPricesController = expressAsyncHandler(async (req, res) => {
+const getPricesController = expressAsyncHandler(async (req, res, next) => {
     const { tokens, network } = req.query
     if (tokens == undefined || tokens.length == 0) {
         return res.status(200).json({
@@ -56,7 +56,7 @@ const getPricesController = expressAsyncHandler(async (req, res) => {
     }
 })
 
-const getQuantityController = expressAsyncHandler(async (req, res) => {
+const getQuantityController = expressAsyncHandler(async (req, res, next) => {
     const { walletAddress, tokens, network } = req.query
     if (walletAddress == undefined) {
         return res.status(200).json({
@@ -142,7 +142,7 @@ const getQuantityController = expressAsyncHandler(async (req, res) => {
     }
 })
 
-const setFeedsController = expressAsyncHandler(async (req, res) => {
+const setFeedsController = expressAsyncHandler(async (req, res, next) => {
     const { tokens, feeds, network } = req.body
     if (tokens == undefined || tokens.length == 0) {
         return res.status(200).json({

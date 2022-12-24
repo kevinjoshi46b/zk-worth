@@ -9,14 +9,14 @@ import {
     getLatestId,
     getPublicKey,
     setRequests,
-} from "../utils/zKCryptoNetWorth.js"
+} from "../utils/zKWorth.js"
 import { encrypt, decrypt } from "../utils/cryptography.js"
 import { netWorthCalculator } from "../utils/netWorthCalculator.js"
 import { generateProof, generateCallData } from "../utils/zkp.js"
 import { upload } from "../utils/ipfs.js"
 
 const getIncomingRequestsController = expressAsyncHandler(
-    async (req, res) => {
+    async (req, res, next) => {
         const fetchIncomingRequests = await getIncomingRequests(
             req.user.username.username
         )
@@ -90,7 +90,7 @@ const getIncomingRequestsController = expressAsyncHandler(
     }
 )
 
-const updateRequestController = expressAsyncHandler(async (req, res) => {
+const updateRequestController = expressAsyncHandler(async (req, res, next) => {
     const { id, sender, status } = req.body
     if (id == undefined) {
         return res.status(200).json({
@@ -216,7 +216,7 @@ const updateRequestController = expressAsyncHandler(async (req, res) => {
 })
 
 const getOutgoingRequestsController = expressAsyncHandler(
-    async (req, res) => {
+    async (req, res, next) => {
         const fetchOutgoingRequests = await getOutgoingRequests(
             req.user.username.username
         )
@@ -286,7 +286,7 @@ const getOutgoingRequestsController = expressAsyncHandler(
     }
 )
 
-const setRequestController = expressAsyncHandler(async (req, res) => {
+const setRequestController = expressAsyncHandler(async (req, res, next) => {
     const { receiver, threshold } = req.body
     if (receiver == undefined) {
         return res.status(200).json({
