@@ -25,10 +25,12 @@ import Chip from "@mui/material/Chip"
 import Button from "@mui/material/Button"
 import Tooltip from "@mui/material/Tooltip"
 import CircularProgress from "@mui/material/CircularProgress"
-
 import { shortner } from "../utils/walletAddressShortner"
 import Drawer from "../components/Drawer"
 import Topbar from "../components/Topbar"
+import Snackbar from "@mui/material/Snackbar"
+import Alert from "@mui/material/Alert"
+import { useCookies } from "react-cookie"
 
 ChartJS.register(
     CategoryScale,
@@ -43,21 +45,12 @@ ChartJS.register(
 const DashboardScreen = ({ drawerWidth }) => {
     const theme = useTheme()
     const [mobileOpen, setMobileOpen] = useState(false)
-
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen)
-    }
-
+    const [isSnackbarOpen, setIsSnackbarOpen] = useState(false)
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success")
+    const [snackbarMessage, setSnackbarMessage] = useState("")
+    const [cookies, setCookie, removeCookie] = useCookies([])
     const [page, setPage] = useState(0)
     const [rowsPerPage, setRowsPerPage] = useState(5)
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage)
-    }
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(+event.target.value)
-        setPage(0)
-    }
-
     const barOptions = {
         indexAxis: "y",
         elements: {
@@ -138,7 +131,6 @@ const DashboardScreen = ({ drawerWidth }) => {
         { id: "avalanche", label: "Avalanche" },
         { id: "arbitrum", label: "Arbitrum" },
     ]
-
     const [netWorth, setNetWorth] = useState(null)
     const [doughnutData, setDoughnutData] = useState(null)
     const [barData, setBarData] = useState(null)
@@ -147,6 +139,12 @@ const DashboardScreen = ({ drawerWidth }) => {
 
     // Update this to fetch and update all the data sequentially
     useEffect(() => {
+        if (cookies.snackbar) {
+            setSnackbarSeverity(cookies.snackbar.snackbarSeverity)
+            setSnackbarMessage(cookies.snackbar.snackbarMessage)
+            setIsSnackbarOpen(true)
+            removeCookie("snackbar", { path: "/" })
+        }
         setTimeout(() => {
             setNetWorth(13021.11)
             setDoughnutData({
@@ -251,8 +249,40 @@ const DashboardScreen = ({ drawerWidth }) => {
         }, 3000)
     }, [])
 
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen)
+    }
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage)
+    }
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(+event.target.value)
+        setPage(0)
+    }
+
+    const closeSnackBar = () => {
+        setIsSnackbarOpen(false)
+    }
+
     return (
         <Box>
+            <Snackbar
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                open={isSnackbarOpen}
+                onClose={closeSnackBar}
+                autoHideDuration={6000}
+            >
+                <Alert
+                    onClose={closeSnackBar}
+                    severity={snackbarSeverity ? snackbarSeverity : ""}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage ? snackbarMessage : ""}
+                </Alert>
+            </Snackbar>
+
             {/* Top Bar */}
             <Topbar
                 pageType="Dashboard"

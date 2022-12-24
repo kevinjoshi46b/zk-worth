@@ -8,7 +8,6 @@ import MenuItem from "@mui/material/MenuItem"
 import Fade from "@mui/material/Fade"
 import Divider from "@mui/material/Divider"
 import Avatar from "@mui/material/Avatar"
-import Tooltip from "@mui/material/Tooltip"
 import MenuIcon from "@mui/icons-material/Menu"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import LogoutIcon from "@mui/icons-material/Logout"
@@ -16,29 +15,31 @@ import { Typography } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
 import { useCookies } from "react-cookie"
 import { useNavigate } from "react-router-dom"
-import { shortner } from "../utils/walletAddressShortner"
 
 const Topbar = ({ pageType, drawerWidth, handleDrawerToggle }) => {
     const theme = useTheme()
-    const [cookies, createCookie, removeCookie] = useCookies([])
+    const [cookies, setCookie, removeCookie] = useCookies([])
     const navigate = useNavigate()
     const [anchorEl, setAnchorEl] = useState(null)
     const open = Boolean(anchorEl)
+
+    useEffect(() => {
+        if (!cookies.token) return navigate("/", { replace: true })
+    }, [])
+
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget)
     }
+
     const handleClose = () => {
         setAnchorEl(null)
     }
 
     const logout = () => {
-        removeCookie("Auth", { path: "/" })
-        navigate("/", { replace: true })
+        removeCookie("token", { path: "/" })
+        removeCookie("username", { path: "/" })
+        navigate("/")
     }
-
-    useEffect(() => {
-        if (!cookies.Auth) return navigate("/", { replace: true })
-    }, [])
 
     return (
         <Box>
@@ -154,42 +155,10 @@ const Topbar = ({ pageType, drawerWidth, handleDrawerToggle }) => {
                                         Username:
                                     </Typography>
                                     <Typography sx={{ fontSize: "18px" }}>
-                                        {cookies.Auth
-                                            ? cookies.Auth.username
+                                        {cookies.username
+                                            ? cookies.username
                                             : ""}
                                     </Typography>
-                                </MenuItem>
-                                <MenuItem
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "start",
-                                        paddingTop: 0,
-                                        paddingBottom: "6px",
-                                        cursor: "default",
-                                        "&.MuiButtonBase-root:hover": {
-                                            bgcolor: "transparent",
-                                        },
-                                    }}
-                                >
-                                    <Typography sx={{ fontSize: "12px" }}>
-                                        Wallet Address:
-                                    </Typography>
-                                    {cookies.Auth ? (
-                                        <Tooltip
-                                            title={cookies.Auth.walletAddress}
-                                        >
-                                            <Typography
-                                                sx={{ fontSize: "18px" }}
-                                            >
-                                                {shortner(
-                                                    cookies.Auth.walletAddress
-                                                )}
-                                            </Typography>
-                                        </Tooltip>
-                                    ) : (
-                                        ""
-                                    )}
                                 </MenuItem>
                                 <Divider />
                                 <MenuItem onClick={logout}>
@@ -291,36 +260,8 @@ const Topbar = ({ pageType, drawerWidth, handleDrawerToggle }) => {
                                     Username:
                                 </Typography>
                                 <Typography sx={{ fontSize: "18px" }}>
-                                    {cookies.Auth ? cookies.Auth.username : ""}
+                                    {cookies.username ? cookies.username : ""}
                                 </Typography>
-                            </MenuItem>
-                            <MenuItem
-                                sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "start",
-                                    paddingTop: 0,
-                                    paddingBottom: "6px",
-                                    cursor: "default",
-                                    "&.MuiButtonBase-root:hover": {
-                                        bgcolor: "transparent",
-                                    },
-                                }}
-                            >
-                                <Typography sx={{ fontSize: "12px" }}>
-                                    Wallet Address:
-                                </Typography>
-                                {cookies.Auth ? (
-                                    <Tooltip title={cookies.Auth.walletAddress}>
-                                        <Typography sx={{ fontSize: "18px" }}>
-                                            {shortner(
-                                                cookies.Auth.walletAddress
-                                            )}
-                                        </Typography>
-                                    </Tooltip>
-                                ) : (
-                                    ""
-                                )}
                             </MenuItem>
                             <Divider />
                             <MenuItem onClick={logout}>

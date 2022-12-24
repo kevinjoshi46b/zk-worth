@@ -20,9 +20,11 @@ import Tab from "@mui/material/Tab"
 import SouthWestIcon from "@mui/icons-material/SouthWest"
 import NorthEastIcon from "@mui/icons-material/NorthEast"
 import Skeleton from "@mui/material/Skeleton"
-
 import Drawer from "../components/Drawer"
 import Topbar from "../components/Topbar"
+import Snackbar from "@mui/material/Snackbar"
+import Alert from "@mui/material/Alert"
+import { useCookies } from "react-cookie"
 
 const TabPanel = (props) => {
     const { children, value, index, ...other } = props
@@ -56,47 +58,20 @@ const a11yProps = (index) => {
 const RequestsScreen = ({ drawerWidth }) => {
     const theme = useTheme()
     const [mobileOpen, setMobileOpen] = useState(false)
-
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen)
-    }
-
+    const [isSnackbarOpen, setIsSnackbarOpen] = useState(false)
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success")
+    const [snackbarMessage, setSnackbarMessage] = useState("")
+    const [cookies, setCookie, removeCookie] = useCookies([])
     const [tabValue, setTabValue] = useState(0)
-
-    const handleChangeTab = (event, newTabValue) => {
-        setTabValue(newTabValue)
-    }
-
     const [page1, setPage1] = useState(0)
     const [rowsPerPage1, setRowsPerPage1] = useState(5)
-    const handleChangePage1 = (event, newPage) => {
-        setPage1(newPage)
-    }
-    const handleChangeRowsPerPage1 = (event) => {
-        setRowsPerPage1(+event.target.value)
-        setPage1(0)
-    }
-
     const [page2, setPage2] = useState(0)
     const [rowsPerPage2, setRowsPerPage2] = useState(5)
-    const handleChangePage2 = (event, newPage) => {
-        setPage2(newPage)
-    }
-    const handleChangeRowsPerPage2 = (event) => {
-        setRowsPerPage2(+event.target.value)
-        setPage2(0)
-    }
-
     const [page3, setPage3] = useState(0)
     const [rowsPerPage3, setRowsPerPage3] = useState(5)
-    const handleChangePage3 = (event, newPage) => {
-        setPage3(newPage)
-    }
-    const handleChangeRowsPerPage3 = (event) => {
-        setRowsPerPage3(+event.target.value)
-        setPage3(0)
-    }
-
+    const [pendingData, setPendingData] = useState(null)
+    const [historyData, setHistoryData] = useState(null)
+    const [outgoingData, setOutgoingData] = useState(null)
     const columns1 = [
         { id: "username", label: "Username" },
         { id: "threshold", label: "Threshold Amount (in $)" },
@@ -116,12 +91,14 @@ const RequestsScreen = ({ drawerWidth }) => {
         { id: "proof", label: "", align: "right" },
     ]
 
-    const [pendingData, setPendingData] = useState(null)
-    const [historyData, setHistoryData] = useState(null)
-    const [outgoingData, setOutgoingData] = useState(null)
-
     // Update this to fetch requests
     useEffect(() => {
+        if (cookies.snackbar) {
+            setSnackbarSeverity(cookies.snackbar.snackbarSeverity)
+            setSnackbarMessage(cookies.snackbar.snackbarMessage)
+            setIsSnackbarOpen(true)
+            removeCookie("snackbar", { path: "/" })
+        }
         setTimeout(() => {
             setPendingData([
                 {
@@ -160,8 +137,62 @@ const RequestsScreen = ({ drawerWidth }) => {
         }, 3000)
     }, [])
 
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen)
+    }
+
+    const handleChangeTab = (event, newTabValue) => {
+        setTabValue(newTabValue)
+    }
+
+    const handleChangePage1 = (event, newPage) => {
+        setPage1(newPage)
+    }
+
+    const handleChangeRowsPerPage1 = (event) => {
+        setRowsPerPage1(+event.target.value)
+        setPage1(0)
+    }
+
+    const handleChangePage2 = (event, newPage) => {
+        setPage2(newPage)
+    }
+
+    const handleChangeRowsPerPage2 = (event) => {
+        setRowsPerPage2(+event.target.value)
+        setPage2(0)
+    }
+
+    const handleChangePage3 = (event, newPage) => {
+        setPage3(newPage)
+    }
+
+    const handleChangeRowsPerPage3 = (event) => {
+        setRowsPerPage3(+event.target.value)
+        setPage3(0)
+    }
+
+    const closeSnackBar = () => {
+        setIsSnackbarOpen(false)
+    }
+
     return (
         <Box>
+            <Snackbar
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                open={isSnackbarOpen}
+                onClose={closeSnackBar}
+                autoHideDuration={6000}
+            >
+                <Alert
+                    onClose={closeSnackBar}
+                    severity={snackbarSeverity ? snackbarSeverity : ""}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage ? snackbarMessage : ""}
+                </Alert>
+            </Snackbar>
+
             {/* Top Bar */}
             <Topbar
                 pageType="Requests"
