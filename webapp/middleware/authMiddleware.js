@@ -9,7 +9,6 @@ const protect = expressAsyncHandler(async (req, res, next) => {
     ) {
         token = req.headers.authorization.split(" ")[1]
         const tokenVerificationResult = verifyToken(token)
-
         if (tokenVerificationResult.success) {
             req.user = tokenVerificationResult.result
             next()
