@@ -10,8 +10,9 @@ import Alert from "@mui/material/Alert"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import WalletRoundedIcon from "@mui/icons-material/WalletRounded"
 import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded"
+import CreateIcon from "@mui/icons-material/Create"
 import { useWeb3Modal } from "@web3modal/react"
-import { useAccount } from "wagmi"
+import { useAccount, useSignMessage } from "wagmi"
 import { useNavigate } from "react-router-dom"
 import { shortner } from "../utils/walletAddressShortner"
 import { useCookies } from "react-cookie"
@@ -33,18 +34,48 @@ const SignupScreen = () => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [isUniqueUsernameLoading, setIsUniqueUsernameLoading] =
         useState(false)
+    const { data, signMessage } = useSignMessage({
+        message: "create account",
+    })
+    const [signedMessage, setSignedMessage] = useState(false)
 
     useEffect(() => {
         if (cookies.token) return navigate("/dashboard", { replace: true })
     }, [])
 
+    useEffect(() => {
+        if (address == null || data == null) {
+            setSignedMessage(false)
+        } else {
+            const signerAddress = ethers.utils.verifyMessage(
+                "create account",
+                data
+            )
+            if (signerAddress == address) {
+                setSignedMessage(true)
+            } else {
+                setSignedMessage(false)
+            }
+        }
+    }, [data, address])
+
     const closeSnackBar = () => {
         setIsSnackbarOpen(false)
     }
 
+    const signMessageFunc = () => {
+        if (address == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Wallet not connected!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        signMessage()
+    }
+
     const checkUniquiness = async () => {
         setIsUniqueUsernameLoading(true)
-        setDisableInput(true)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const providerContract = new ethers.Contract(
             zKWorthPolygonMumbai.address,
@@ -61,7 +92,6 @@ const SignupScreen = () => {
         }
         setIsSnackbarOpen(true)
         setIsUniqueUsernameLoading(false)
-        setDisableInput(false)
     }
 
     const createAccount = async () => {
@@ -83,12 +113,21 @@ const SignupScreen = () => {
             setSubmitLoading(false)
             return
         }
+        if (data == undefined || !signedMessage) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Message not signed!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
         const resp = await axios({
             method: "post",
             url: "/api/auth/signup",
             headers: {},
             data: {
                 username: username,
+                message: "create account",
+                signedMessage: data,
                 primaryWalletAddress: address,
             },
         })
@@ -99,7 +138,7 @@ const SignupScreen = () => {
                 type: "text/plain",
             })
             element.href = URL.createObjectURL(file)
-            element.download = "Password_KryptoAssetZ.pem"
+            element.download = "Password_ZKWorth.pem"
             document.body.appendChild(element)
             element.click()
             URL.revokeObjectURL(element.href)
@@ -189,24 +228,93 @@ const SignupScreen = () => {
                     sx={{ width: "100%", mb: "20px" }}
                     disabled
                 />
-                <LoadingButton
-                    onClick={() => {
-                        open()
-                    }}
-                    loadingPosition="start"
-                    startIcon={<WalletRoundedIcon />}
-                    variant="outlined"
+                {disableInput ? (
+                    <LoadingButton
+                        startIcon={<WalletRoundedIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                        disabled
+                    >
+                        Connect Wallet
+                    </LoadingButton>
+                ) : (
+                    <LoadingButton
+                        onClick={() => {
+                            open()
+                        }}
+                        loadingPosition="start"
+                        startIcon={<WalletRoundedIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                    >
+                        Connect Wallet
+                    </LoadingButton>
+                )}
+                <Typography
                     sx={{
-                        borderRadius: 2,
-                        fontWeight: "bold",
-                        width: "280px",
-                        paddingY: "10px",
+                        display: "flex",
+                        flexDirection: "row",
                         mb: "20px",
                     }}
                 >
-                    Connect Wallet
-                </LoadingButton>
+                    Message Signed:
+                    {signedMessage ? (
+                        <Typography sx={{ color: "green", ml: "6px" }}>
+                            YES
+                        </Typography>
+                    ) : (
+                        <Typography sx={{ color: "red", ml: "6px" }}>
+                            NO
+                        </Typography>
+                    )}
+                </Typography>
                 {disableInput ? (
+                    <LoadingButton
+                        startIcon={<CreateIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                        disabled
+                    >
+                        Sign Message
+                    </LoadingButton>
+                ) : (
+                    <LoadingButton
+                        onClick={() => {
+                            signMessageFunc()
+                        }}
+                        loadingPosition="start"
+                        startIcon={<CreateIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                    >
+                        Sign Message
+                    </LoadingButton>
+                )}
+                {isUniqueUsernameLoading || disableInput ? (
                     <TextField
                         value={username}
                         id="username"
@@ -223,23 +331,41 @@ const SignupScreen = () => {
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 )}
-                <LoadingButton
-                    onClick={() => checkUniquiness()}
-                    loading={isUniqueUsernameLoading}
-                    loadingPosition="start"
-                    startIcon={<CheckCircleIcon />}
-                    variant="outlined"
-                    sx={{
-                        borderRadius: 2,
-                        fontWeight: "bold",
-                        width: "280px",
-                        paddingY: "10px",
-                        mt: "20px",
-                        mb: "20px",
-                    }}
-                >
-                    Check Username Uniqueness
-                </LoadingButton>
+                {disableInput ? (
+                    <LoadingButton
+                        startIcon={<CheckCircleIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mt: "20px",
+                            mb: "20px",
+                        }}
+                        disabled
+                    >
+                        Check Username Uniqueness
+                    </LoadingButton>
+                ) : (
+                    <LoadingButton
+                        onClick={() => checkUniquiness()}
+                        loading={isUniqueUsernameLoading}
+                        loadingPosition="start"
+                        startIcon={<CheckCircleIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mt: "20px",
+                            mb: "20px",
+                        }}
+                    >
+                        Check Username Uniqueness
+                    </LoadingButton>
+                )}
                 <LoadingButton
                     onClick={() => createAccount()}
                     loading={submitLoading}

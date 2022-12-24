@@ -11,11 +11,24 @@ import { generateToken } from "../utils/jwt.js"
 import { ADMIN_USERNAMES } from "../env.js"
 
 const login = expressAsyncHandler(async (req, res, next) => {
-    const { username, primaryWalletAddress, password } = req.body
+    const { username, message, signedMessage, primaryWalletAddress, password } =
+        req.body
     if (username == undefined || username == "") {
         return res.status(200).json({
             error: "Authentication data missing",
             message: "Username is not provided",
+        })
+    }
+    if (message == undefined) {
+        return res.status(200).json({
+            error: "Authentication data missing",
+            message: "Message is not provided",
+        })
+    }
+    if (signedMessage == undefined) {
+        return res.status(200).json({
+            error: "Authentication data missing",
+            message: "Signed message is not provided",
         })
     }
     if (primaryWalletAddress == undefined) {
@@ -31,46 +44,68 @@ const login = expressAsyncHandler(async (req, res, next) => {
         })
     }
     if (ethers.utils.isAddress(primaryWalletAddress)) {
-        let primaryWalletAddressFetched = await getPrimaryWalletAddress(
-            username
-        )
-        if (primaryWalletAddressFetched.success) {
-            try {
-                const decryptedPrimaryWalletAddress = decrypt(
-                    password,
-                    primaryWalletAddressFetched.result
+        try {
+            const signerAddress = ethers.utils.verifyMessage(
+                message,
+                signedMessage
+            )
+            if (signerAddress == primaryWalletAddress) {
+                let primaryWalletAddressFetched = await getPrimaryWalletAddress(
+                    username
                 )
-                if (primaryWalletAddress == decryptedPrimaryWalletAddress) {
-                    let isAdmin = false
-                    ADMIN_USERNAMES.forEach((adminUsername) => {
-                        if (username == adminUsername) {
-                            isAdmin = true
+                if (primaryWalletAddressFetched.success) {
+                    try {
+                        const decryptedPrimaryWalletAddress = decrypt(
+                            password,
+                            primaryWalletAddressFetched.result
+                        )
+                        if (
+                            primaryWalletAddress ==
+                            decryptedPrimaryWalletAddress
+                        ) {
+                            let isAdmin = false
+                            ADMIN_USERNAMES.forEach((adminUsername) => {
+                                if (username == adminUsername) {
+                                    isAdmin = true
+                                }
+                            })
+                            return res.status(200).json({
+                                message: "Authenticated successfully!",
+                                token: generateToken({
+                                    username,
+                                    privateKey: password,
+                                    isAdmin,
+                                }),
+                            })
+                        } else {
+                            return res.status(200).json({
+                                error: "Invalid credentials provided",
+                                message:
+                                    "The password or the primary wallet address do not match with the username provided",
+                            })
                         }
-                    })
-                    return res.status(200).json({
-                        message: "Authenticated successfully!",
-                        token: generateToken({
-                            username,
-                            privateKey: password,
-                            isAdmin,
-                        }),
-                    })
+                    } catch (error) {
+                        return res.status(200).json({
+                            error: "Invalid password",
+                            message:
+                                "The password provided is incorrect or corrupted",
+                        })
+                    }
                 } else {
                     return res.status(200).json({
-                        error: "Invalid credentials provided",
-                        message:
-                            "The password or the primary wallet address do not match with the username provided",
+                        error: "Primary wallet address fetch from blockchain failed",
+                        message: "Please try again",
                     })
                 }
-            } catch (error) {
+            } else {
                 return res.status(200).json({
-                    error: "Invalid password",
-                    message: "The password provided is incorrect or corrupted",
+                    error: "Invalid wallet address",
+                    message: "The message was not signed by the wallet address",
                 })
             }
-        } else {
+        } catch (error) {
             return res.status(200).json({
-                error: "Primary wallet address fetch from blockchain failed",
+                error: "Validating signature failed",
                 message: "Please try again",
             })
         }
@@ -83,11 +118,23 @@ const login = expressAsyncHandler(async (req, res, next) => {
 })
 
 const signup = expressAsyncHandler(async (req, res, next) => {
-    const { username, primaryWalletAddress } = req.body
+    const { username, message, signedMessage, primaryWalletAddress } = req.body
     if (username == undefined || username == "") {
         return res.status(200).json({
             error: "Signup data missing",
             message: "Username is not provided",
+        })
+    }
+    if (message == undefined) {
+        return res.status(200).json({
+            error: "Signup data missing",
+            message: "Message is not provided",
+        })
+    }
+    if (signedMessage == undefined) {
+        return res.status(200).json({
+            error: "Signup data missing",
+            message: "Signed message is not provided",
         })
     }
     if (primaryWalletAddress == undefined) {
@@ -97,47 +144,66 @@ const signup = expressAsyncHandler(async (req, res, next) => {
         })
     }
     if (ethers.utils.isAddress(primaryWalletAddress)) {
-        const uniqueUsernameCheck = await isUniqueUsername(username)
-        if (uniqueUsernameCheck.success) {
-            if (uniqueUsernameCheck.result) {
-                let keys = genKeys()
-                const uniqueKeyCheck = await isUniquePublicKey(keys[0])
-                if (uniqueKeyCheck.success && uniqueKeyCheck.result) {
-                    const encryptePrimaryWalletAddress = encrypt(
-                        keys[0],
-                        primaryWalletAddress
-                    )
-                    const accountCreationResult = await setAccount(
-                        username,
-                        keys[0],
-                        encryptePrimaryWalletAddress
-                    )
-                    if (accountCreationResult.success) {
-                        return res.status(200).json({
-                            message: "Registered successfully!",
-                            password: keys[1],
-                        })
+        try {
+            const signerAddress = ethers.utils.verifyMessage(
+                message,
+                signedMessage
+            )
+            if (signerAddress == primaryWalletAddress) {
+                const uniqueUsernameCheck = await isUniqueUsername(username)
+                if (uniqueUsernameCheck.success) {
+                    if (uniqueUsernameCheck.result) {
+                        let keys = genKeys()
+                        const uniqueKeyCheck = await isUniquePublicKey(keys[0])
+                        if (uniqueKeyCheck.success && uniqueKeyCheck.result) {
+                            const encryptePrimaryWalletAddress = encrypt(
+                                keys[0],
+                                primaryWalletAddress
+                            )
+                            const accountCreationResult = await setAccount(
+                                username,
+                                keys[0],
+                                encryptePrimaryWalletAddress
+                            )
+                            if (accountCreationResult.success) {
+                                return res.status(200).json({
+                                    message: "Registered successfully!",
+                                    password: keys[1],
+                                })
+                            } else {
+                                return res.status(200).json({
+                                    error: "Account creation failed",
+                                    message: "Please try again",
+                                })
+                            }
+                        } else {
+                            return res.status(200).json({
+                                error: "Key generation failed",
+                                message: "Please try again",
+                            })
+                        }
                     } else {
                         return res.status(200).json({
-                            error: "Account creation failed",
-                            message: "Please try again",
+                            error: "Username is not unique",
+                            message:
+                                "Please check and provide a unique username",
                         })
                     }
                 } else {
                     return res.status(200).json({
-                        error: "Key generation failed",
+                        error: "Username uniqueness check failed",
                         message: "Please try again",
                     })
                 }
             } else {
                 return res.status(200).json({
-                    error: "Username is not unique",
-                    message: "Please check and provide a unique username",
+                    error: "Invalid wallet address",
+                    message: "The message was not signed by the wallet address",
                 })
             }
-        } else {
+        } catch (error) {
             return res.status(200).json({
-                error: "Username uniqueness check failed",
+                error: "Validating signature failed",
                 message: "Please try again",
             })
         }

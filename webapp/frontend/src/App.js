@@ -86,6 +86,7 @@ function App() {
                     theme="dark"
                     accentColor="blackWhite"
                     ethereumClient={ethereumClient}
+                    themeZIndex="100"
                 />
                 <WagmiConfig client={wagmiClient}>
                     <Router>

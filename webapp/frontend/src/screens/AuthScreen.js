@@ -8,6 +8,7 @@ import WalletRoundedIcon from "@mui/icons-material/WalletRounded"
 import LoginIcon from "@mui/icons-material/Login"
 import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded"
 import FileUploadIcon from "@mui/icons-material/FileUpload"
+import CreateIcon from "@mui/icons-material/Create"
 import TextField from "@mui/material/TextField"
 import Snackbar from "@mui/material/Snackbar"
 import Alert from "@mui/material/Alert"
@@ -16,7 +17,8 @@ import { useNavigate } from "react-router-dom"
 import { useCookies } from "react-cookie"
 import axios from "axios"
 import { useWeb3Modal } from "@web3modal/react"
-import { useAccount } from "wagmi"
+import { useAccount, useSignMessage } from "wagmi"
+import { ethers } from "ethers"
 
 const AuthScreen = () => {
     const theme = useTheme()
@@ -32,6 +34,10 @@ const AuthScreen = () => {
     const [passwordFileName, setPasswordFileName] = useState("")
     const [disableInput, setDisableInput] = useState(false)
     const [submitLoading, setSubmitLoading] = useState(false)
+    const { data, signMessage } = useSignMessage({
+        message: "authentication",
+    })
+    const [signedMessage, setSignedMessage] = useState(false)
 
     useEffect(() => {
         if (cookies.token) return navigate("/dashboard", { replace: true })
@@ -43,8 +49,35 @@ const AuthScreen = () => {
         }
     }, [])
 
+    useEffect(() => {
+        if (address == null || data == null) {
+            setSignedMessage(false)
+        } else {
+            const signerAddress = ethers.utils.verifyMessage(
+                "authentication",
+                data
+            )
+            if (signerAddress == address) {
+                setSignedMessage(true)
+            } else {
+                setSignedMessage(false)
+            }
+        }
+    }, [data, address])
+
     const closeSnackBar = () => {
         setIsSnackbarOpen(false)
+    }
+
+    const signMessageFunc = () => {
+        if (address == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Wallet not connected!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        signMessage()
     }
 
     function uploadPasswordFile(event) {
@@ -88,12 +121,21 @@ const AuthScreen = () => {
             setSubmitLoading(false)
             return
         }
+        if (data == undefined || !signedMessage) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Message not signed!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
         const resp = await axios({
             method: "post",
             url: "/api/auth",
             headers: {},
             data: {
                 username,
+                message: "authentication",
+                signedMessage: data,
                 primaryWalletAddress: address,
                 password: await password.text(),
             },
@@ -258,22 +300,92 @@ const AuthScreen = () => {
                     sx={{ width: "100%", mb: "20px", mt: "20px" }}
                     disabled
                 />
-                <LoadingButton
-                    onClick={() => {
-                        open()
-                    }}
-                    startIcon={<WalletRoundedIcon />}
-                    variant="outlined"
+                {disableInput ? (
+                    <LoadingButton
+                        startIcon={<WalletRoundedIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                        disabled
+                    >
+                        Connect Wallet
+                    </LoadingButton>
+                ) : (
+                    <LoadingButton
+                        onClick={() => {
+                            open()
+                        }}
+                        startIcon={<WalletRoundedIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                    >
+                        Connect Wallet
+                    </LoadingButton>
+                )}
+                <Typography
                     sx={{
-                        borderRadius: 2,
-                        fontWeight: "bold",
-                        width: "280px",
-                        paddingY: "10px",
+                        display: "flex",
+                        flexDirection: "row",
                         mb: "20px",
                     }}
                 >
-                    Connect Wallet
-                </LoadingButton>
+                    Message Signed:
+                    {signedMessage ? (
+                        <Typography sx={{ color: "green", ml: "6px" }}>
+                            YES
+                        </Typography>
+                    ) : (
+                        <Typography sx={{ color: "red", ml: "6px" }}>
+                            NO
+                        </Typography>
+                    )}
+                </Typography>
+                {disableInput ? (
+                    <LoadingButton
+                        loadingPosition="start"
+                        startIcon={<CreateIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                        disabled
+                    >
+                        Sign Message
+                    </LoadingButton>
+                ) : (
+                    <LoadingButton
+                        onClick={() => {
+                            signMessageFunc()
+                        }}
+                        loadingPosition="start"
+                        startIcon={<CreateIcon />}
+                        variant="outlined"
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: "bold",
+                            width: "280px",
+                            paddingY: "10px",
+                            mb: "20px",
+                        }}
+                    >
+                        Sign Message
+                    </LoadingButton>
+                )}
                 <LoadingButton
                     onClick={() => authenticate()}
                     loading={submitLoading}

@@ -28,7 +28,8 @@ import { useWeb3Modal } from "@web3modal/react"
 import { useAccount, useSignMessage } from "wagmi"
 import TextField from "@mui/material/TextField"
 import Modal from "@mui/material/Modal"
-import Create from "@mui/icons-material/Create"
+import { Typography } from "@mui/material"
+import { ethers } from "ethers"
 
 const WalletsScreen = ({ drawerWidth }) => {
     const theme = useTheme()
@@ -51,6 +52,7 @@ const WalletsScreen = ({ drawerWidth }) => {
         { id: "walletAddress", label: "Wallet Address" },
         { id: "action", label: "", align: "right" },
     ]
+    const [signedMessage, setSignedMessage] = useState(false)
 
     useEffect(() => {
         if (cookies.snackbar) {
@@ -79,6 +81,22 @@ const WalletsScreen = ({ drawerWidth }) => {
             setIsSnackbarOpen(true)
         })
     }, [])
+
+    useEffect(() => {
+        if (address == null || data == null) {
+            setSignedMessage(false)
+        } else {
+            const signerAddress = ethers.utils.verifyMessage(
+                "linking wallet",
+                data
+            )
+            if (signerAddress == address) {
+                setSignedMessage(true)
+            } else {
+                setSignedMessage(false)
+            }
+        }
+    }, [data, address])
 
     const closeSnackBar = () => {
         setIsSnackbarOpen(false)
@@ -117,7 +135,7 @@ const WalletsScreen = ({ drawerWidth }) => {
             setSubmitLoading(false)
             return
         }
-        if (data == undefined) {
+        if (data == undefined || !signedMessage) {
             setSnackbarSeverity("error")
             setSnackbarMessage("Message not signed!")
             setIsSnackbarOpen(true)
@@ -289,6 +307,7 @@ const WalletsScreen = ({ drawerWidth }) => {
                     onClose={() => setOpenModal(false)}
                     aria-labelledby="Link Wallet"
                     aria-describedby="Linking Secondary Wallet"
+                    sx={{ zIndex: 50 }}
                 >
                     <Box
                         sx={{
@@ -315,40 +334,92 @@ const WalletsScreen = ({ drawerWidth }) => {
                             sx={{ width: "100%", mb: "20px" }}
                             disabled
                         />
-                        <LoadingButton
-                            onClick={() => {
-                                open()
-                            }}
-                            loadingPosition="start"
-                            startIcon={<WalletRoundedIcon />}
-                            variant="outlined"
+                        {submitLoading ? (
+                            <LoadingButton
+                                startIcon={<WalletRoundedIcon />}
+                                variant="outlined"
+                                sx={{
+                                    borderRadius: 2,
+                                    fontWeight: "bold",
+                                    width: "280px",
+                                    paddingY: "10px",
+                                    mb: "20px",
+                                }}
+                                disabled
+                            >
+                                Connect Wallet
+                            </LoadingButton>
+                        ) : (
+                            <LoadingButton
+                                onClick={() => {
+                                    open()
+                                }}
+                                loadingPosition="start"
+                                startIcon={<WalletRoundedIcon />}
+                                variant="outlined"
+                                sx={{
+                                    borderRadius: 2,
+                                    fontWeight: "bold",
+                                    width: "280px",
+                                    paddingY: "10px",
+                                    mb: "20px",
+                                }}
+                            >
+                                Connect Wallet
+                            </LoadingButton>
+                        )}
+                        <Typography
                             sx={{
-                                borderRadius: 2,
-                                fontWeight: "bold",
-                                width: "280px",
-                                paddingY: "10px",
+                                display: "flex",
+                                flexDirection: "row",
                                 mb: "20px",
                             }}
                         >
-                            Connect Wallet
-                        </LoadingButton>
-                        <LoadingButton
-                            onClick={() => {
-                                signMessageFunc()
-                            }}
-                            loadingPosition="start"
-                            startIcon={<CreateIcon />}
-                            variant="outlined"
-                            sx={{
-                                borderRadius: 2,
-                                fontWeight: "bold",
-                                width: "280px",
-                                paddingY: "10px",
-                                mb: "20px",
-                            }}
-                        >
-                            Sign Message
-                        </LoadingButton>
+                            Message Signed:
+                            {signedMessage ? (
+                                <Typography sx={{ color: "green", ml: "6px" }}>
+                                    YES
+                                </Typography>
+                            ) : (
+                                <Typography sx={{ color: "red", ml: "6px" }}>
+                                    NO
+                                </Typography>
+                            )}
+                        </Typography>
+                        {submitLoading ? (
+                            <LoadingButton
+                                startIcon={<CreateIcon />}
+                                variant="outlined"
+                                sx={{
+                                    borderRadius: 2,
+                                    fontWeight: "bold",
+                                    width: "280px",
+                                    paddingY: "10px",
+                                    mb: "20px",
+                                }}
+                                disabled
+                            >
+                                Sign Message
+                            </LoadingButton>
+                        ) : (
+                            <LoadingButton
+                                onClick={() => {
+                                    signMessageFunc()
+                                }}
+                                loadingPosition="start"
+                                startIcon={<CreateIcon />}
+                                variant="outlined"
+                                sx={{
+                                    borderRadius: 2,
+                                    fontWeight: "bold",
+                                    width: "280px",
+                                    paddingY: "10px",
+                                    mb: "20px",
+                                }}
+                            >
+                                Sign Message
+                            </LoadingButton>
+                        )}
                         <LoadingButton
                             onClick={() => linkSecondaryWallet()}
                             loading={submitLoading}
