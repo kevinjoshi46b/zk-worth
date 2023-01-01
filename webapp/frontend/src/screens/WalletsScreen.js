@@ -65,21 +65,29 @@ const WalletsScreen = ({ drawerWidth }) => {
             method: "get",
             url: "/api/wallets",
             headers: { Authorization: "Bearer " + cookies.token },
-        }).then((resp) => {
-            if (!("error" in resp.data)) {
-                setWalletsData(resp.data.data)
-                setSnackbarSeverity("success")
-                setSnackbarMessage(resp.data.message)
-            } else {
+        })
+            .then((resp) => {
+                if (!("error" in resp.data)) {
+                    setWalletsData(resp.data.data)
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(resp.data.message)
+                } else {
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        (resp.data.error ? resp.data.error : "") +
+                            ": " +
+                            (resp.data.message ? resp.data.message : "")
+                    )
+                }
+                setIsSnackbarOpen(true)
+            })
+            .catch((error) => {
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
-                    (resp.data.error ? resp.data.error : "") +
-                        ": " +
-                        (resp.data.message ? resp.data.message : "")
+                    "Oops something went wrong in fetching wallet details! Please reload"
                 )
-            }
-            setIsSnackbarOpen(true)
-        })
+                setIsSnackbarOpen(true)
+            })
     }, [])
 
     useEffect(() => {
@@ -151,29 +159,38 @@ const WalletsScreen = ({ drawerWidth }) => {
                 signedMessage: data,
                 secondaryWalletAddress: address,
             },
-        }).then((resp) => {
-            if (!("error" in resp.data)) {
-                let newWalletsData = walletsData
-                newWalletsData.push({
-                    type: "secondary",
-                    walletAddress: address,
-                    isLoading: false,
-                })
-                setWalletsData(newWalletsData)
-                setSnackbarSeverity("success")
-                setSnackbarMessage(resp.data.message)
-                setOpenModal(false)
-            } else {
+        })
+            .then((resp) => {
+                if (!("error" in resp.data)) {
+                    let newWalletsData = walletsData
+                    newWalletsData.push({
+                        type: "secondary",
+                        walletAddress: address,
+                        isLoading: false,
+                    })
+                    setWalletsData(newWalletsData)
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(resp.data.message)
+                    setOpenModal(false)
+                } else {
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        (resp.data.error ? resp.data.error : "") +
+                            ": " +
+                            (resp.data.message ? resp.data.message : "")
+                    )
+                }
+                setIsSnackbarOpen(true)
+                setSubmitLoading(false)
+            })
+            .catch((error) => {
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
-                    (resp.data.error ? resp.data.error : "") +
-                        ": " +
-                        (resp.data.message ? resp.data.message : "")
+                    "Oops something went wrong in linking wallet! Please try again"
                 )
-            }
-            setIsSnackbarOpen(true)
-            setSubmitLoading(false)
-        })
+                setIsSnackbarOpen(true)
+                setSubmitLoading(false)
+            })
     }
 
     const unlinkSecondaryWalletAddress = (secondaryWalletAddress) => {
@@ -197,20 +214,48 @@ const WalletsScreen = ({ drawerWidth }) => {
             data: {
                 secondaryWalletAddress,
             },
-        }).then((resp) => {
-            if (!("error" in resp.data)) {
-                newWalletsData = []
-                for (let i = 0; i < walletsData.length; i++) {
-                    if (
-                        walletsData[i].walletAddress != secondaryWalletAddress
-                    ) {
-                        newWalletsData.push(walletsData[i])
+        })
+            .then((resp) => {
+                if (!("error" in resp.data)) {
+                    newWalletsData = []
+                    for (let i = 0; i < walletsData.length; i++) {
+                        if (
+                            walletsData[i].walletAddress !=
+                            secondaryWalletAddress
+                        ) {
+                            newWalletsData.push(walletsData[i])
+                        }
                     }
+                    setWalletsData(newWalletsData)
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(resp.data.message)
+                } else {
+                    newWalletsData = []
+                    for (let i = 0; i < walletsData.length; i++) {
+                        if (
+                            walletsData[i].walletAddress !=
+                            secondaryWalletAddress
+                        ) {
+                            newWalletsData.push(walletsData[i])
+                        } else {
+                            newWalletsData.push({
+                                type: "secondary",
+                                walletAddress: secondaryWalletAddress,
+                                isLoading: false,
+                            })
+                        }
+                    }
+                    setWalletsData(newWalletsData)
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        (resp.data.error ? resp.data.error : "") +
+                            ": " +
+                            (resp.data.message ? resp.data.message : "")
+                    )
                 }
-                setWalletsData(newWalletsData)
-                setSnackbarSeverity("success")
-                setSnackbarMessage(resp.data.message)
-            } else {
+                setIsSnackbarOpen(true)
+            })
+            .catch((error) => {
                 newWalletsData = []
                 for (let i = 0; i < walletsData.length; i++) {
                     if (
@@ -228,13 +273,10 @@ const WalletsScreen = ({ drawerWidth }) => {
                 setWalletsData(newWalletsData)
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
-                    (resp.data.error ? resp.data.error : "") +
-                        ": " +
-                        (resp.data.message ? resp.data.message : "")
+                    "Oops something went wrong in unlinking wallet! Please try again"
                 )
-            }
-            setIsSnackbarOpen(true)
-        })
+                setIsSnackbarOpen(true)
+            })
     }
 
     return (
