@@ -232,7 +232,7 @@ const DrawerItems = ({ pageType }) => {
                     }}
                 >
                     <a
-                        href="https://github.com/K-B-J/zk-crypto-net-worth"
+                        href="https://github.com/kevinjoshi46b/zk-worth"
                         target="_blank"
                     >
                         <IconButton
