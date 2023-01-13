@@ -37,7 +37,7 @@ const networkMapper = {
 }
 
 const isNetworkSupported = (network) => {
-    if (!network in networkMapper) {
+    if (!(network in networkMapper)) {
         return {
             success: false,
             error: "Provided network is not supported yet!",
