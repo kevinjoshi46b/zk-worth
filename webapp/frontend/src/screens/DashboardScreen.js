@@ -2,13 +2,6 @@ import { useState, useEffect } from "react"
 import Box from "@mui/material/Box"
 import { Typography } from "@mui/material"
 import Skeleton from "@mui/material/Skeleton"
-import Table from "@mui/material/Table"
-import TableBody from "@mui/material/TableBody"
-import TableCell from "@mui/material/TableCell"
-import TableContainer from "@mui/material/TableContainer"
-import TableHead from "@mui/material/TableHead"
-import TablePagination from "@mui/material/TablePagination"
-import TableRow from "@mui/material/TableRow"
 import { useTheme } from "@mui/material/styles"
 import {
     Chart as ChartJS,
@@ -21,16 +14,23 @@ import {
     ArcElement,
 } from "chart.js"
 import { Bar, Doughnut, Pie } from "react-chartjs-2"
-import Chip from "@mui/material/Chip"
-import Button from "@mui/material/Button"
-import Tooltip from "@mui/material/Tooltip"
 import CircularProgress from "@mui/material/CircularProgress"
-import { shortner } from "../utils/walletAddressShortner"
 import Drawer from "../components/Drawer"
 import Topbar from "../components/Topbar"
 import Snackbar from "@mui/material/Snackbar"
 import Alert from "@mui/material/Alert"
 import { useCookies } from "react-cookie"
+import PropTypes from "prop-types"
+import Tabs from "@mui/material/Tabs"
+import Tab from "@mui/material/Tab"
+import DashboardTabPanel from "../components/DashboardTabPanel"
+import axios from "axios"
+import {
+    priceTokens,
+    quantityTokens,
+    colors,
+    borderColors,
+} from "../utils/dashboardData"
 
 ChartJS.register(
     CategoryScale,
@@ -42,6 +42,35 @@ ChartJS.register(
     ArcElement
 )
 
+const TabPanel = (props) => {
+    const { children, value, index, ...other } = props
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`simple-tabpanel-${index}`}
+            aria-labelledby={`simple-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box>{children}</Box>}
+        </div>
+    )
+}
+
+TabPanel.propTypes = {
+    children: PropTypes.node,
+    index: PropTypes.number.isRequired,
+    value: PropTypes.number.isRequired,
+}
+
+const a11yProps = (index) => {
+    return {
+        id: `simple-tab-${index}`,
+        "aria-controls": `simple-tabpanel-${index}`,
+    }
+}
+
 const DashboardScreen = ({ drawerWidth }) => {
     const theme = useTheme()
     const [mobileOpen, setMobileOpen] = useState(false)
@@ -49,8 +78,6 @@ const DashboardScreen = ({ drawerWidth }) => {
     const [snackbarSeverity, setSnackbarSeverity] = useState("success")
     const [snackbarMessage, setSnackbarMessage] = useState("")
     const [cookies, setCookie, removeCookie] = useCookies([])
-    const [page, setPage] = useState(0)
-    const [rowsPerPage, setRowsPerPage] = useState(5)
     const barOptions = {
         indexAxis: "y",
         elements: {
@@ -60,11 +87,6 @@ const DashboardScreen = ({ drawerWidth }) => {
         },
         responsive: true,
         plugins: {
-            title: {
-                display: true,
-                text: "Quantity Per Crypto",
-                color: theme.palette.mode === "dark" ? "white" : "black",
-            },
             legend: {
                 position: "right",
                 labels: {
@@ -95,11 +117,6 @@ const DashboardScreen = ({ drawerWidth }) => {
     }
     const doughnutOptions = {
         plugins: {
-            title: {
-                display: true,
-                text: "Net Worth Per Crypto",
-                color: theme.palette.mode === "dark" ? "white" : "black",
-            },
             legend: {
                 position: "bottom",
                 labels: {
@@ -110,11 +127,6 @@ const DashboardScreen = ({ drawerWidth }) => {
     }
     const pieOptions = {
         plugins: {
-            title: {
-                display: true,
-                text: "Net Worth Per Wallet",
-                color: theme.palette.mode === "dark" ? "white" : "black",
-            },
             legend: {
                 position: "bottom",
                 labels: {
@@ -123,21 +135,14 @@ const DashboardScreen = ({ drawerWidth }) => {
             },
         },
     }
-    const columns = [
-        { id: "wallet", label: "" },
-        { id: "walletAddress", label: "Wallet Address" },
-        { id: "ethereum", label: "Ethereum" },
-        { id: "polygon", label: "Polygon" },
-        { id: "avalanche", label: "Avalanche" },
-        { id: "arbitrum", label: "Arbitrum" },
-    ]
+
     const [netWorth, setNetWorth] = useState(null)
     const [doughnutData, setDoughnutData] = useState(null)
     const [barData, setBarData] = useState(null)
     const [pieData, setPieData] = useState(null)
-    const [tableData, setTableData] = useState(null)
+    const [tabData, setTabData] = useState(null)
+    const [tabValue, setTabValue] = useState(0)
 
-    // Update this to fetch and update all the data sequentially
     useEffect(() => {
         if (cookies.snackbar) {
             setSnackbarSeverity(cookies.snackbar.snackbarSeverity)
@@ -145,125 +150,294 @@ const DashboardScreen = ({ drawerWidth }) => {
             setIsSnackbarOpen(true)
             removeCookie("snackbar", { path: "/" })
         }
-        setTimeout(() => {
-            setNetWorth(13021.11)
-            setDoughnutData({
-                labels: ["Ethereum", "Polygon", "Arbitrum", "Avalanche"],
-                datasets: [
-                    {
-                        data: [10000, 300, 1400, 2000],
-                        backgroundColor: [
-                            "rgba(255, 99, 132, 0.2)",
-                            "rgba(54, 162, 235, 0.2)",
-                            "rgba(255, 206, 86, 0.2)",
-                            "rgba(75, 192, 192, 0.2)",
-                            "rgba(153, 102, 255, 0.2)",
-                            "rgba(255, 159, 64, 0.2)",
-                        ],
-                        borderColor: [
-                            "rgba(255, 99, 132, 1)",
-                            "rgba(54, 162, 235, 1)",
-                            "rgba(255, 206, 86, 1)",
-                            "rgba(75, 192, 192, 1)",
-                            "rgba(153, 102, 255, 1)",
-                            "rgba(255, 159, 64, 1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-            })
-            setBarData({
-                labels: ["Ethereum", "Polygon", "Arbitrum", "Avalanche"],
-                datasets: [
-                    {
-                        label: "Quantity",
-                        data: [17.71, 14, 9.7, 0.3],
-                        borderColor: "rgb(53, 162, 235)",
-                        backgroundColor: "rgba(53, 162, 235, 0.2)",
-                    },
-                ],
-            })
-            setPieData({
-                labels: ["W1", "W2", "W3", "W4"],
-                datasets: [
-                    {
-                        data: [10000, 3000, 4300, 6000],
-                        backgroundColor: [
-                            "rgba(255, 99, 132, 0.2)",
-                            "rgba(54, 162, 235, 0.2)",
-                            "rgba(255, 206, 86, 0.2)",
-                            "rgba(75, 192, 192, 0.2)",
-                            "rgba(153, 102, 255, 0.2)",
-                            "rgba(255, 159, 64, 0.2)",
-                        ],
-                        borderColor: [
-                            "rgba(255, 99, 132, 1)",
-                            "rgba(54, 162, 235, 1)",
-                            "rgba(255, 206, 86, 1)",
-                            "rgba(75, 192, 192, 1)",
-                            "rgba(153, 102, 255, 1)",
-                            "rgba(255, 159, 64, 1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-            })
-            setTableData([
-                {
-                    type: "primary",
-                    wallet: "W1",
-                    walletAddress: "0x707Vu8kHRMZBN4KF18lFr11Cb",
-                    // ethereum: "3.21",
-                    polygon: "4",
-                    avalanche: "0",
-                    arbitrum: "0",
-                },
-                {
-                    type: "secondary",
-                    wallet: "W2",
-                    walletAddress: "0x847RAabTa1QtTX17DbU4p1x23",
-                    ethereum: "2.1",
-                    polygon: "0",
-                    avalanche: "0",
-                    arbitrum: "0",
-                },
-                {
-                    type: "secondary",
-                    wallet: "W3",
-                    walletAddress: "0x7319ybchYF1wSKPRgTBpY444p",
-                    ethereum: "0",
-                    polygon: "10",
-                    avalanche: "9.7",
-                    arbitrum: "0.3",
-                },
-                {
-                    type: "secondary",
-                    wallet: "W4",
-                    walletAddress: "0x912kWsdo6UXE7UVHrhS95xy64",
-                    ethereum: "12.4",
-                    polygon: "0",
-                    avalanche: "0",
-                    arbitrum: "0",
-                },
-            ])
-        }, 3000)
+
+        const dashboardDataFetcher = async () => {
+            let updated = true
+
+            let walletsData
+
+            // Fetching wallets
+            try {
+                const walletResp = await axios({
+                    method: "get",
+                    url: "/api/wallets",
+                    headers: { Authorization: "Bearer " + cookies.token },
+                })
+
+                if (!("error" in walletResp.data)) {
+                    walletsData = walletResp.data.data
+                } else {
+                    updated = false
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching data! Please reload"
+                    )
+                    setIsSnackbarOpen(true)
+                }
+            } catch (error) {
+                updated = false
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    "Oops something went wrong in fetching data! Please reload"
+                )
+                setIsSnackbarOpen(true)
+            }
+
+            let priceData
+
+            // Fetching prices
+            if (updated) {
+                try {
+                    const priceResp = await axios({
+                        method: "get",
+                        url: "/api/dashboard/price",
+                        headers: {
+                            Authorization: "Bearer " + cookies.token,
+                        },
+                        params: {
+                            tokens: priceTokens.tokens,
+                            network: priceTokens.network,
+                        },
+                    })
+                    if (!("error" in priceResp.data)) {
+                        priceData = priceResp.data.data
+                    } else {
+                        updated = false
+                        setSnackbarSeverity("error")
+                        setSnackbarMessage(
+                            "Oops something went wrong in fetching data! Please reload"
+                        )
+                        setIsSnackbarOpen(true)
+                    }
+                } catch (error) {
+                    updated = false
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching data! Please reload"
+                    )
+                    setIsSnackbarOpen(true)
+                }
+            }
+
+            let netWorthTemp = 0
+            let doughnutDataTemp = null
+            let barDataTemp = null
+            let pieDataTemp = null
+            let tabDataTemp = null
+
+            // Fetching data for each wallet on multiple networks for multiple tokens and updating the frontend
+            if (updated) {
+                for (let a = 0; a < walletsData.length; a++) {
+                    let walletData = walletsData[a]
+                    if (updated) {
+                        let tabD = null
+                        let walletNetWorth = 0
+                        for (let b = 0; b < quantityTokens.length; b++) {
+                            let quantityToken = quantityTokens[b]
+                            if (updated) {
+                                try {
+                                    const quantityResp = await axios({
+                                        method: "get",
+                                        url: "/api/dashboard/quantity",
+                                        headers: {
+                                            Authorization:
+                                                "Bearer " + cookies.token,
+                                        },
+                                        params: {
+                                            walletAddress:
+                                                walletData.walletAddress,
+                                            network: quantityToken.network,
+                                            tokens: quantityToken.tokens,
+                                        },
+                                    })
+                                    if (!("error" in quantityResp.data)) {
+                                        if (tabD == null) {
+                                            let wallet = "W1"
+                                            if (tabDataTemp == null) {
+                                                wallet = "W1"
+                                            } else {
+                                                wallet =
+                                                    "W" +
+                                                    (
+                                                        parseInt(
+                                                            tabDataTemp[
+                                                                tabDataTemp.length -
+                                                                    1
+                                                            ].wallet.slice(1)
+                                                        ) + 1
+                                                    ).toString()
+                                            }
+                                            tabD = {
+                                                type: walletData.type,
+                                                wallet,
+                                                walletAddress:
+                                                    walletData.walletAddress,
+                                                quantity: {},
+                                            }
+                                        }
+                                        let quantityList = []
+                                        for (
+                                            let x = 0;
+                                            x < quantityToken.names.length;
+                                            x++
+                                        ) {
+                                            quantityList.push({
+                                                cryptoName:
+                                                    quantityToken.names[x],
+                                                quantity:
+                                                    quantityResp.data.data[x],
+                                            })
+                                            const priceIndex =
+                                                priceTokens.names.indexOf(
+                                                    quantityToken.names[x]
+                                                )
+                                            walletNetWorth +=
+                                                priceData[priceIndex] *
+                                                quantityResp.data.data[x]
+                                            let newBarData
+                                            if (barDataTemp == null) {
+                                                let emptyData = []
+                                                for (
+                                                    let y = 0;
+                                                    y <
+                                                    priceTokens.names.length;
+                                                    y++
+                                                ) {
+                                                    emptyData.push(0)
+                                                }
+                                                newBarData = {
+                                                    labels: priceTokens.names,
+                                                    datasets: [
+                                                        {
+                                                            label: "Quantity",
+                                                            data: emptyData,
+                                                            backgroundColor:
+                                                                "rgba(53, 162, 235, 0.2)",
+                                                            borderColor:
+                                                                "rgb(53, 162, 235)",
+                                                        },
+                                                    ],
+                                                }
+                                            } else {
+                                                newBarData = barDataTemp
+                                            }
+                                            newBarData.datasets[0].data[
+                                                priceIndex
+                                            ] += quantityResp.data.data[x]
+                                            barDataTemp = newBarData
+                                            let newDoughnutData
+                                            if (doughnutDataTemp == null) {
+                                                let emptyData = []
+                                                for (
+                                                    let y = 0;
+                                                    y <
+                                                    priceTokens.names.length;
+                                                    y++
+                                                ) {
+                                                    emptyData.push(0)
+                                                }
+                                                newDoughnutData = {
+                                                    labels: priceTokens.names,
+                                                    datasets: [
+                                                        {
+                                                            data: emptyData,
+                                                            backgroundColor:
+                                                                colors,
+                                                            borderColor:
+                                                                borderColors,
+                                                            borderWidth: 1,
+                                                        },
+                                                    ],
+                                                }
+                                            } else {
+                                                newDoughnutData =
+                                                    doughnutDataTemp
+                                            }
+                                            newDoughnutData.datasets[0].data[
+                                                priceIndex
+                                            ] =
+                                                newBarData.datasets[0].data[
+                                                    priceIndex
+                                                ] * priceData[priceIndex]
+                                            doughnutDataTemp = newDoughnutData
+                                        }
+                                        tabD.quantity[
+                                            quantityToken.networkDisplayName
+                                        ] = quantityList
+                                    } else {
+                                        updated = false
+                                        setSnackbarSeverity("error")
+                                        setSnackbarMessage(
+                                            "Oops something went wrong in fetching data! Please reload"
+                                        )
+                                        setIsSnackbarOpen(true)
+                                    }
+                                } catch (error) {
+                                    console.log(error)
+                                    updated = false
+                                    setSnackbarSeverity("error")
+                                    setSnackbarMessage(
+                                        "Oops something went wrong in fetching data! Please reload"
+                                    )
+                                    setIsSnackbarOpen(true)
+                                }
+                            }
+                        }
+                        let newTabData =
+                            tabDataTemp == null ? [] : [...tabDataTemp]
+                        newTabData.push(tabD)
+                        tabDataTemp = newTabData
+                        const newNetWorth = netWorthTemp + walletNetWorth
+                        netWorthTemp = newNetWorth
+                        let newPieData
+                        if (pieDataTemp == null) {
+                            newPieData = {
+                                labels: [],
+                                datasets: [
+                                    {
+                                        data: [],
+                                        backgroundColor: colors,
+                                        borderColor: borderColors,
+                                        borderWidth: 1,
+                                    },
+                                ],
+                            }
+                        } else {
+                            newPieData = pieDataTemp
+                        }
+                        newPieData.labels.push(tabD.wallet)
+                        newPieData.datasets[0].data.push(walletNetWorth)
+                        pieDataTemp = newPieData
+                    }
+                }
+            }
+
+            // Displaying message that all data has been updated
+            if (updated) {
+                setNetWorth(netWorthTemp.toFixed(2))
+                setDoughnutData(doughnutDataTemp)
+                setBarData(barDataTemp)
+                setPieData(pieDataTemp)
+                setTabData(tabDataTemp)
+                setSnackbarSeverity("success")
+                setSnackbarMessage("Data fetched successfully!")
+                setIsSnackbarOpen(true)
+            }
+        }
+
+        dashboardDataFetcher()
     }, [])
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen)
     }
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage)
-    }
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(+event.target.value)
-        setPage(0)
-    }
-
     const closeSnackBar = () => {
         setIsSnackbarOpen(false)
+    }
+
+    const handleChangeTab = (event, newTabValue) => {
+        setTabValue(newTabValue)
     }
 
     return (
@@ -353,9 +527,21 @@ const DashboardScreen = ({ drawerWidth }) => {
                             mr: { sm: "24px" },
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            justifyContent: "space-evenly",
+                            flexDirection: "column",
                         }}
                     >
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: "bold",
+                                    mb: "14px",
+                                }}
+                            >
+                                Net Worth Per Crypto
+                            </Typography>
+                        </Box>
                         {doughnutData == null ? (
                             <CircularProgress />
                         ) : (
@@ -379,9 +565,21 @@ const DashboardScreen = ({ drawerWidth }) => {
                             mr: { sm: "24px" },
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            justifyContent: "space-evenly",
+                            flexDirection: "column",
                         }}
                     >
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: "bold",
+                                    mb: "14px",
+                                }}
+                            >
+                                Quantity Per Crypto
+                            </Typography>
+                        </Box>
                         {barData == null ? (
                             <CircularProgress />
                         ) : (
@@ -401,9 +599,21 @@ const DashboardScreen = ({ drawerWidth }) => {
                             mb: "24px",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            justifyContent: "space-evenly",
+                            flexDirection: "column",
                         }}
                     >
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: "bold",
+                                    mb: "14px",
+                                }}
+                            >
+                                Net Worth Per Wallet
+                            </Typography>
+                        </Box>
                         {pieData == null ? (
                             <CircularProgress />
                         ) : (
@@ -420,7 +630,6 @@ const DashboardScreen = ({ drawerWidth }) => {
                                 : "#F5F5F5",
                         borderRadius: 4,
                         padding: "20px",
-                        pb: "6px",
                     }}
                 >
                     <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -434,343 +643,37 @@ const DashboardScreen = ({ drawerWidth }) => {
                             Quantity Per Wallet
                         </Typography>
                     </Box>
-                    {tableData == null ? (
-                        <>
-                            <TableContainer
-                                sx={{
-                                    borderTopLeftRadius: 12,
-                                    borderTopRightRadius: 12,
-                                }}
-                            >
-                                <Table stickyHeader aria-label="sticky table">
-                                    <TableHead>
-                                        <TableRow>
-                                            {columns.map((column, index) => (
-                                                <TableCell
-                                                    key={index}
-                                                    align={column.align}
-                                                >
-                                                    {column.label}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={320}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={320}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={320}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Skeleton
-                                                        variant="rounded"
-                                                        width={70}
-                                                        height={40}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                            <Box
-                                sx={{
-                                    width: "100%",
-                                    display: "flex",
-                                    justifyContent: "end",
-                                }}
-                            >
-                                <Skeleton
-                                    variant="rounded"
-                                    width={300}
-                                    height={30}
-                                    sx={{
-                                        mt: "14px",
-                                        mr: "18px",
-                                        mb: "16px",
-                                    }}
-                                />
-                            </Box>
-                        </>
+                    {tabData == null ? (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                flexDirection: "column",
+                            }}
+                        >
+                            <CircularProgress />
+                        </Box>
                     ) : (
                         <>
-                            <TableContainer
-                                sx={{
-                                    borderTopLeftRadius: 12,
-                                    borderTopRightRadius: 12,
-                                }}
-                            >
-                                <Table stickyHeader aria-label="sticky table">
-                                    <TableHead>
-                                        <TableRow>
-                                            {columns.map((column, index) => (
-                                                <TableCell key={index}>
-                                                    {column.label}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {tableData
-                                            .slice(
-                                                page * rowsPerPage,
-                                                page * rowsPerPage + rowsPerPage
-                                            )
-                                            .map((row, index) => {
-                                                return (
-                                                    <TableRow hover key={index}>
-                                                        {columns.map(
-                                                            (column, index) => {
-                                                                const value =
-                                                                    row[
-                                                                        column
-                                                                            .id
-                                                                    ]
-                                                                return (
-                                                                    <TableCell
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                    >
-                                                                        {column.id ==
-                                                                        "walletAddress" ? (
-                                                                            <Box
-                                                                                sx={{
-                                                                                    display:
-                                                                                        "flex",
-                                                                                    alignItems:
-                                                                                        "center",
-                                                                                }}
-                                                                            >
-                                                                                <Tooltip
-                                                                                    title={
-                                                                                        value
-                                                                                    }
-                                                                                >
-                                                                                    <Button
-                                                                                        sx={{
-                                                                                            cursor: "default",
-                                                                                            "&.MuiButtonBase-root:hover":
-                                                                                                {
-                                                                                                    bgcolor:
-                                                                                                        "transparent",
-                                                                                                },
-                                                                                            color:
-                                                                                                theme
-                                                                                                    .palette
-                                                                                                    .mode ===
-                                                                                                "dark"
-                                                                                                    ? "#FFFFFF"
-                                                                                                    : "#000000",
-                                                                                            mr: "6px",
-                                                                                        }}
-                                                                                    >
-                                                                                        {shortner(
-                                                                                            value
-                                                                                        )}
-                                                                                    </Button>
-                                                                                </Tooltip>
-                                                                                {row.type ==
-                                                                                "primary" ? (
-                                                                                    <Chip
-                                                                                        size="small"
-                                                                                        label="primary"
-                                                                                        color="success"
-                                                                                        variant="outlined"
-                                                                                    />
-                                                                                ) : (
-                                                                                    ""
-                                                                                )}
-                                                                            </Box>
-                                                                        ) : value ==
-                                                                          null ? (
-                                                                            <Box>
-                                                                                <Skeleton
-                                                                                    variant="rounded"
-                                                                                    width={
-                                                                                        70
-                                                                                    }
-                                                                                    height={
-                                                                                        40
-                                                                                    }
-                                                                                />
-                                                                            </Box>
-                                                                        ) : (
-                                                                            value
-                                                                        )}
-                                                                    </TableCell>
-                                                                )
-                                                            }
-                                                        )}
-                                                    </TableRow>
-                                                )
-                                            })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                            <TablePagination
-                                rowsPerPageOptions={[5, 10, 15, 20, 25]}
-                                component="div"
-                                count={tableData.length}
-                                rowsPerPage={rowsPerPage}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                            />
+                            <Tabs value={tabValue} onChange={handleChangeTab}>
+                                {tabData.map((obj, index) => {
+                                    return (
+                                        <Tab
+                                            label={<Box>{obj.wallet}</Box>}
+                                            {...a11yProps(index)}
+                                        />
+                                    )
+                                })}
+                            </Tabs>
+                            {tabData.map((obj, index) => {
+                                return (
+                                    <TabPanel value={tabValue} index={index}>
+                                        <DashboardTabPanel
+                                            data={obj}
+                                        ></DashboardTabPanel>
+                                    </TabPanel>
+                                )
+                            })}
                         </>
                     )}
                 </Box>
