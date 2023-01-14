@@ -143,6 +143,10 @@ const DashboardScreen = ({ drawerWidth }) => {
     const [pieData, setPieData] = useState(null)
     const [tabData, setTabData] = useState(null)
     const [tabValue, setTabValue] = useState(0)
+    const [walletsData, setWalletsData] = useState(null)
+    const [priceData, setPriceData] = useState(null)
+    const [apiCounter, setApiCounter] = useState(null)
+    const [tabD, setTabD] = useState(null)
 
     useEffect(() => {
         if (cookies.snackbar) {
@@ -151,24 +155,16 @@ const DashboardScreen = ({ drawerWidth }) => {
             setIsSnackbarOpen(true)
             removeCookie("snackbar", { path: "/" })
         }
-
-        const dashboardDataFetcher = async () => {
-            let updated = true
-
-            let walletsData
-
-            // Fetching wallets
+        const innerFunction = async () => {
             try {
                 const walletResp = await axios({
                     method: "get",
                     url: "/api/wallets",
                     headers: { Authorization: "Bearer " + cookies.token },
                 })
-
                 if (!("error" in walletResp.data)) {
-                    walletsData = walletResp.data.data
+                    setWalletsData(walletResp.data.data)
                 } else {
-                    updated = false
                     setSnackbarSeverity("error")
                     setSnackbarMessage(
                         "Oops something went wrong in fetching data! Please reload"
@@ -176,18 +172,19 @@ const DashboardScreen = ({ drawerWidth }) => {
                     setIsSnackbarOpen(true)
                 }
             } catch (error) {
-                updated = false
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
                     "Oops something went wrong in fetching data! Please reload"
                 )
                 setIsSnackbarOpen(true)
             }
+        }
+        innerFunction()
+    }, [])
 
-            let priceData
-
-            // Fetching prices
-            if (updated) {
+    useEffect(() => {
+        if (walletsData != null) {
+            const innerFunction = async () => {
                 try {
                     const priceResp = await axios({
                         method: "get",
@@ -212,9 +209,8 @@ const DashboardScreen = ({ drawerWidth }) => {
                                 )
                             )
                         }
-                        priceData = prices
+                        setPriceData(prices)
                     } else {
-                        updated = false
                         setSnackbarSeverity("error")
                         setSnackbarMessage(
                             "Oops something went wrong in fetching data! Please reload"
@@ -222,7 +218,6 @@ const DashboardScreen = ({ drawerWidth }) => {
                         setIsSnackbarOpen(true)
                     }
                 } catch (error) {
-                    updated = false
                     setSnackbarSeverity("error")
                     setSnackbarMessage(
                         "Oops something went wrong in fetching data! Please reload"
@@ -230,237 +225,223 @@ const DashboardScreen = ({ drawerWidth }) => {
                     setIsSnackbarOpen(true)
                 }
             }
+            innerFunction()
+        }
+    }, [walletsData])
 
-            let netWorthTemp = 0
-            let doughnutDataTemp = null
-            let barDataTemp = null
-            let pieDataTemp = null
-            let tabDataTemp = null
+    useEffect(() => {
+        if (priceData != null) {
+            setApiCounter(walletsData.length * quantityTokens.length)
+        }
+    }, [priceData])
 
-            // Fetching data for each wallet on multiple networks for multiple tokens and updating the frontend
-            if (updated) {
-                for (let a = 0; a < walletsData.length; a++) {
-                    let walletData = walletsData[a]
-                    if (updated) {
-                        let tabD = null
-                        let walletNetWorth = 0
-                        for (let b = 0; b < quantityTokens.length; b++) {
-                            let quantityToken = quantityTokens[b]
-                            if (updated) {
-                                try {
-                                    const quantityResp = await axios({
-                                        method: "get",
-                                        url: "/api/dashboard/quantity",
-                                        headers: {
-                                            Authorization:
-                                                "Bearer " + cookies.token,
-                                        },
-                                        params: {
-                                            walletAddress:
-                                                walletData.walletAddress,
-                                            network: quantityToken.network,
-                                            tokens: quantityToken.tokens,
-                                        },
-                                    })
-                                    if (!("error" in quantityResp.data)) {
-                                        if (tabD == null) {
-                                            let wallet = "W1"
-                                            if (tabDataTemp == null) {
-                                                wallet = "W1"
-                                            } else {
-                                                wallet =
-                                                    "W" +
-                                                    (
-                                                        parseInt(
-                                                            tabDataTemp[
-                                                                tabDataTemp.length -
-                                                                    1
-                                                            ].wallet.slice(1)
-                                                        ) + 1
-                                                    ).toString()
-                                            }
-                                            tabD = {
-                                                type: walletData.type,
-                                                wallet,
-                                                walletAddress:
-                                                    walletData.walletAddress,
-                                                quantity: {},
-                                            }
-                                        }
-                                        let quantityList = []
-                                        for (
-                                            let x = 0;
-                                            x < quantityToken.names.length;
-                                            x++
-                                        ) {
-                                            quantityList.push({
-                                                cryptoName:
-                                                    quantityToken.names[x],
-                                                quantity: Number(
-                                                    ethers.utils.formatUnits(
-                                                        quantityResp.data.data[
-                                                            x
-                                                        ],
-                                                        quantityToken
-                                                            .decimalPlaces[x]
-                                                    )
-                                                ),
-                                            })
-                                            const priceIndex =
-                                                priceTokens.names.indexOf(
-                                                    quantityToken.names[x]
-                                                )
-                                            walletNetWorth +=
-                                                priceData[priceIndex] *
-                                                Number(
-                                                    ethers.utils.formatUnits(
-                                                        quantityResp.data.data[
-                                                            x
-                                                        ],
-                                                        quantityToken
-                                                            .decimalPlaces[x]
-                                                    )
-                                                )
-                                            let newBarData
-                                            if (barDataTemp == null) {
-                                                let emptyData = []
-                                                for (
-                                                    let y = 0;
-                                                    y <
-                                                    priceTokens.names.length;
-                                                    y++
-                                                ) {
-                                                    emptyData.push(0)
-                                                }
-                                                newBarData = {
-                                                    labels: priceTokens.names,
-                                                    datasets: [
-                                                        {
-                                                            label: "Quantity",
-                                                            data: emptyData,
-                                                            backgroundColor:
-                                                                "rgba(53, 162, 235, 0.2)",
-                                                            borderColor:
-                                                                "rgb(53, 162, 235)",
-                                                        },
-                                                    ],
-                                                }
-                                            } else {
-                                                newBarData = barDataTemp
-                                            }
-                                            newBarData.datasets[0].data[
-                                                priceIndex
-                                            ] += Number(
-                                                ethers.utils.formatUnits(
-                                                    quantityResp.data.data[x],
-                                                    quantityToken.decimalPlaces[
-                                                        x
-                                                    ]
-                                                )
-                                            )
-                                            barDataTemp = newBarData
-                                            let newDoughnutData
-                                            if (doughnutDataTemp == null) {
-                                                let emptyData = []
-                                                for (
-                                                    let y = 0;
-                                                    y <
-                                                    priceTokens.names.length;
-                                                    y++
-                                                ) {
-                                                    emptyData.push(0)
-                                                }
-                                                newDoughnutData = {
-                                                    labels: priceTokens.names,
-                                                    datasets: [
-                                                        {
-                                                            data: emptyData,
-                                                            backgroundColor:
-                                                                colors,
-                                                            borderColor:
-                                                                borderColors,
-                                                            borderWidth: 1,
-                                                        },
-                                                    ],
-                                                }
-                                            } else {
-                                                newDoughnutData =
-                                                    doughnutDataTemp
-                                            }
-                                            newDoughnutData.datasets[0].data[
-                                                priceIndex
-                                            ] =
-                                                newBarData.datasets[0].data[
-                                                    priceIndex
-                                                ] * priceData[priceIndex]
-                                            doughnutDataTemp = newDoughnutData
-                                        }
-                                        tabD.quantity[
-                                            quantityToken.networkDisplayName
-                                        ] = quantityList
-                                    } else {
-                                        updated = false
-                                        setSnackbarSeverity("error")
-                                        setSnackbarMessage(
-                                            "Oops something went wrong in fetching data! Please reload"
-                                        )
-                                        setIsSnackbarOpen(true)
-                                    }
-                                } catch (error) {
-                                    console.log(error)
-                                    updated = false
-                                    setSnackbarSeverity("error")
-                                    setSnackbarMessage(
-                                        "Oops something went wrong in fetching data! Please reload"
-                                    )
-                                    setIsSnackbarOpen(true)
+    useEffect(() => {
+        if (apiCounter != null) {
+            if (apiCounter == 0) {
+                setSnackbarSeverity("success")
+                setSnackbarMessage("All data fetched successfully!")
+                setIsSnackbarOpen(true)
+            } else {
+                const innerFunction = async () => {
+                    let walletData =
+                        walletsData[
+                            walletsData.length -
+                                Math.ceil(apiCounter / quantityTokens.length)
+                        ]
+                    let quantityToken =
+                        quantityTokens[
+                            quantityTokens.length -
+                                (apiCounter -
+                                    (Math.ceil(
+                                        apiCounter / quantityTokens.length
+                                    ) -
+                                        1) *
+                                        quantityTokens.length)
+                        ]
+                    try {
+                        const quantityResp = await axios({
+                            method: "get",
+                            url: "/api/dashboard/quantity",
+                            headers: {
+                                Authorization: "Bearer " + cookies.token,
+                            },
+                            params: {
+                                walletAddress: walletData.walletAddress,
+                                network: quantityToken.network,
+                                tokens: quantityToken.tokens,
+                            },
+                        })
+                        if (!("error" in quantityResp.data)) {
+                            let newTabD
+                            if (tabD == null) {
+                                let wallet
+                                if (tabData == null) {
+                                    wallet = "W1"
+                                } else {
+                                    wallet =
+                                        "W" +
+                                        (
+                                            parseInt(
+                                                tabData[
+                                                    tabData.length - 1
+                                                ].wallet.slice(1)
+                                            ) + 1
+                                        ).toString()
                                 }
+                                newTabD = {
+                                    type: walletData.type,
+                                    wallet,
+                                    walletAddress: walletData.walletAddress,
+                                    quantity: {},
+                                }
+                            } else {
+                                newTabD = tabD
                             }
-                        }
-                        let newTabData =
-                            tabDataTemp == null ? [] : [...tabDataTemp]
-                        newTabData.push(tabD)
-                        tabDataTemp = newTabData
-                        const newNetWorth = netWorthTemp + walletNetWorth
-                        netWorthTemp = newNetWorth
-                        let newPieData
-                        if (pieDataTemp == null) {
-                            newPieData = {
-                                labels: [],
-                                datasets: [
-                                    {
-                                        data: [],
-                                        backgroundColor: colors,
-                                        borderColor: borderColors,
-                                        borderWidth: 1,
-                                    },
-                                ],
+                            let quantityList = []
+                            let networkNetWorth = 0
+                            let newBarData
+                            if (barData == null) {
+                                let emptyData = []
+                                for (
+                                    let y = 0;
+                                    y < priceTokens.names.length;
+                                    y++
+                                ) {
+                                    emptyData.push(0)
+                                }
+                                newBarData = {
+                                    labels: priceTokens.names,
+                                    datasets: [
+                                        {
+                                            label: "Quantity",
+                                            data: emptyData,
+                                            backgroundColor:
+                                                "rgba(53, 162, 235, 0.2)",
+                                            borderColor: "rgb(53, 162, 235)",
+                                        },
+                                    ],
+                                }
+                            } else {
+                                newBarData = barData
                             }
+                            let newDoughnutData
+                            if (doughnutData == null) {
+                                let emptyData = []
+                                for (
+                                    let y = 0;
+                                    y < priceTokens.names.length;
+                                    y++
+                                ) {
+                                    emptyData.push(0)
+                                }
+                                newDoughnutData = {
+                                    labels: priceTokens.names,
+                                    datasets: [
+                                        {
+                                            data: emptyData,
+                                            backgroundColor: colors,
+                                            borderColor: borderColors,
+                                            borderWidth: 1,
+                                        },
+                                    ],
+                                }
+                            } else {
+                                newDoughnutData = doughnutData
+                            }
+                            for (
+                                let x = 0;
+                                x < quantityToken.names.length;
+                                x++
+                            ) {
+                                const currentQuantity = Number(
+                                    ethers.utils.formatUnits(
+                                        quantityResp.data.data[x],
+                                        quantityToken.decimalPlaces[x]
+                                    )
+                                )
+                                const priceIndex = priceTokens.names.indexOf(
+                                    quantityToken.names[x]
+                                )
+                                networkNetWorth +=
+                                    priceData[priceIndex] * currentQuantity
+                                newDoughnutData.datasets[0].data[priceIndex] +=
+                                    currentQuantity * priceData[priceIndex]
+                                newBarData.datasets[0].data[priceIndex] +=
+                                    currentQuantity
+                                quantityList.push({
+                                    cryptoName: quantityToken.names[x],
+                                    quantity: currentQuantity,
+                                })
+                            }
+                            newTabD.quantity[quantityToken.networkDisplayName] =
+                                quantityList
+                            const newNetWorth =
+                                Number(netWorth == null ? 0 : netWorth) +
+                                Number(networkNetWorth.toFixed(2))
+                            let newTabData =
+                                tabData == null
+                                    ? []
+                                    : tabD == null
+                                    ? tabData
+                                    : tabData.slice(0, -1)
+                            newTabData.push(newTabD)
+                            let newPieData
+                            if (pieData == null) {
+                                newPieData = {
+                                    labels: [],
+                                    datasets: [
+                                        {
+                                            data: [],
+                                            backgroundColor: colors,
+                                            borderColor: borderColors,
+                                            borderWidth: 1,
+                                        },
+                                    ],
+                                }
+                            } else {
+                                newPieData = pieData
+                            }
+                            if (tabD == null) {
+                                newPieData.labels.push(newTabD.wallet)
+                                newPieData.datasets[0].data.push(
+                                    networkNetWorth
+                                )
+                            } else {
+                                newPieData.datasets[0].data[
+                                    newPieData.datasets[0].data.length - 1
+                                ] += networkNetWorth
+                            }
+                            const newApiCounter = apiCounter - 1
+                            setNetWorth(newNetWorth)
+                            setDoughnutData(newDoughnutData)
+                            setBarData(newBarData)
+                            setPieData(newPieData)
+                            if ((apiCounter - 1) % quantityTokens.length == 0) {
+                                setTabD(null)
+                            } else {
+                                setTabD(newTabD)
+                            }
+                            setTabData(newTabData)
+                            setApiCounter(newApiCounter)
                         } else {
-                            newPieData = pieDataTemp
+                            setSnackbarSeverity("error")
+                            setSnackbarMessage(
+                                "Oops something went wrong in fetching data! Please reload"
+                            )
+                            setIsSnackbarOpen(true)
                         }
-                        newPieData.labels.push(tabD.wallet)
-                        newPieData.datasets[0].data.push(walletNetWorth)
-                        pieDataTemp = newPieData
+                    } catch (error) {
+                        setSnackbarSeverity("error")
+                        setSnackbarMessage(
+                            "Oops something went wrong in fetching data! Please reload"
+                        )
+                        setIsSnackbarOpen(true)
                     }
                 }
-            }
-
-            // Displaying message that all data has been updated
-            if (updated) {
-                setNetWorth(netWorthTemp.toFixed(2))
-                setDoughnutData(doughnutDataTemp)
-                setBarData(barDataTemp)
-                setPieData(pieDataTemp)
-                setTabData(tabDataTemp)
-                setSnackbarSeverity("success")
-                setSnackbarMessage("Data fetched successfully!")
-                setIsSnackbarOpen(true)
+                innerFunction()
             }
         }
-
-        dashboardDataFetcher()
-    }, [])
+    }, [apiCounter])
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen)
