@@ -31,6 +31,7 @@ import {
     colors,
     borderColors,
 } from "../utils/dashboardData"
+import { ethers } from "ethers"
 
 ChartJS.register(
     CategoryScale,
@@ -200,7 +201,18 @@ const DashboardScreen = ({ drawerWidth }) => {
                         },
                     })
                     if (!("error" in priceResp.data)) {
-                        priceData = priceResp.data.data
+                        let prices = []
+                        for (let i = 0; i < priceResp.data.data.length; i++) {
+                            prices.push(
+                                Number(
+                                    ethers.utils.formatUnits(
+                                        priceResp.data.data[i],
+                                        priceTokens.decimalPlaces[i]
+                                    )
+                                )
+                            )
+                        }
+                        priceData = prices
                     } else {
                         updated = false
                         setSnackbarSeverity("error")
@@ -284,8 +296,15 @@ const DashboardScreen = ({ drawerWidth }) => {
                                             quantityList.push({
                                                 cryptoName:
                                                     quantityToken.names[x],
-                                                quantity:
-                                                    quantityResp.data.data[x],
+                                                quantity: Number(
+                                                    ethers.utils.formatUnits(
+                                                        quantityResp.data.data[
+                                                            x
+                                                        ],
+                                                        quantityToken
+                                                            .decimalPlaces[x]
+                                                    )
+                                                ),
                                             })
                                             const priceIndex =
                                                 priceTokens.names.indexOf(
@@ -293,7 +312,15 @@ const DashboardScreen = ({ drawerWidth }) => {
                                                 )
                                             walletNetWorth +=
                                                 priceData[priceIndex] *
-                                                quantityResp.data.data[x]
+                                                Number(
+                                                    ethers.utils.formatUnits(
+                                                        quantityResp.data.data[
+                                                            x
+                                                        ],
+                                                        quantityToken
+                                                            .decimalPlaces[x]
+                                                    )
+                                                )
                                             let newBarData
                                             if (barDataTemp == null) {
                                                 let emptyData = []
@@ -323,7 +350,14 @@ const DashboardScreen = ({ drawerWidth }) => {
                                             }
                                             newBarData.datasets[0].data[
                                                 priceIndex
-                                            ] += quantityResp.data.data[x]
+                                            ] += Number(
+                                                ethers.utils.formatUnits(
+                                                    quantityResp.data.data[x],
+                                                    quantityToken.decimalPlaces[
+                                                        x
+                                                    ]
+                                                )
+                                            )
                                             barDataTemp = newBarData
                                             let newDoughnutData
                                             if (doughnutDataTemp == null) {

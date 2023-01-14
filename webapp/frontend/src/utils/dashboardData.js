@@ -7,6 +7,7 @@ export const priceTokens = {
         "0xaDb88FCc910aBfb2c03B49EE2087e7D6C2Ddb2E9",
         "0xe6b8a5CF854791412c1f6EFC7CAf629f5Df1c747",
     ],
+    decimalPlaces: [8, 8, 8, 8],
 }
 
 export const quantityTokens = [
@@ -16,19 +17,21 @@ export const quantityTokens = [
         names: ["ETH", "MATIC", "BTC", "USDC"],
         tokens: [
             "0xA108830A23A9a054FfF4470a8e6292da0886A4D4",
-            "0xda4a47edf8ab3c5eeeb537a97c5b66ea42f49cda",
-            "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
+            "0xC04B0d3107736C32e19F1c62b2aF67BE61d63a05",
+            "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
         ],
+        decimalPlaces: [18, 18, 8, 6],
     },
     {
         network: "polygonMumbai",
         networkDisplayName: "Polygon Mumbai",
         names: ["MATIC", "ETH", "BTC", "USDC"],
         tokens: [
-            "0xBA47cF08bDFbA09E7732c0e48E12a11Cd1536bcd",
+            "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",
             "0xaDb88FCc910aBfb2c03B49EE2087e7D6C2Ddb2E9",
             "0xe6b8a5CF854791412c1f6EFC7CAf629f5Df1c747",
         ],
+        decimalPlaces: [18, 18, 8, 6],
     },
 ]
 

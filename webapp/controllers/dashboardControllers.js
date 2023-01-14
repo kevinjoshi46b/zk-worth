@@ -31,15 +31,9 @@ const getPricesController = expressAsyncHandler(async (req, res, next) => {
     }
     const fetchedPrices = await getPrices(tokens, network)
     if (fetchedPrices.success) {
-        let prices = []
-        for (let i = 0; i < fetchedPrices.result.length; i++) {
-            prices.push(
-                Number(ethers.utils.formatUnits(fetchedPrices.result[i], 8))
-            )
-        }
         return res.status(200).json({
             message: "Fetched prices from blockchain successfully!",
-            data: prices,
+            data: fetchedPrices.result,
         })
     } else {
         if (fetchedPrices.error == "Provided network is not supported yet!") {
@@ -98,11 +92,9 @@ const getQuantityController = expressAsyncHandler(async (req, res, next) => {
             network
         )
         if (fetchedBalances.success) {
-            let quantity = [
-                Number(ethers.utils.formatUnits(fetchedNativeBalance.result)),
-            ]
+            let quantity = [fetchedNativeBalance.result]
             fetchedBalances.result.forEach((balance) => {
-                quantity.push(Number(ethers.utils.formatUnits(balance)))
+                quantity.push(balance)
             })
             return res.status(200).json({
                 message: `Fetched quantity for ${walletAddress} wallet from ${network} network successfully!`,
