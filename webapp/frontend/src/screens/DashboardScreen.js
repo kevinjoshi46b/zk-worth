@@ -375,9 +375,10 @@ const DashboardScreen = ({ drawerWidth }) => {
                             }
                             newTabD.quantity[quantityToken.networkDisplayName] =
                                 quantityList
-                            const newNetWorth =
+                            const newNetWorth = (
                                 Number(netWorth == null ? 0 : netWorth) +
-                                Number(networkNetWorth.toFixed(2))
+                                Number(networkNetWorth)
+                            ).toFixed(2)
                             let newTabData =
                                 tabData == null
                                     ? []
