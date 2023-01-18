@@ -138,7 +138,7 @@ const SignupScreen = () => {
                 type: "text/plain",
             })
             element.href = URL.createObjectURL(file)
-            element.download = "Password_ZKWorth.pem"
+            element.download = "Password_ZKWorth_" + username + ".pem"
             document.body.appendChild(element)
             element.click()
             URL.revokeObjectURL(element.href)
