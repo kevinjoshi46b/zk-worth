@@ -109,8 +109,6 @@ const RequestsScreen = ({ drawerWidth }) => {
             removeCookie("snackbar", { path: "/" })
         }
         const innerFunction = async () => {
-            let fetched = true
-
             try {
                 const incomingRequestsResp = await axios({
                     method: "get",
@@ -122,57 +120,23 @@ const RequestsScreen = ({ drawerWidth }) => {
                 if (!("error" in incomingRequestsResp.data)) {
                     setPendingData(incomingRequestsResp.data.data[0])
                     setHistoryData(incomingRequestsResp.data.data[1])
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(
+                        "Incoming requests data fetched successfully!"
+                    )
                 } else {
-                    fetched = false
                     setSnackbarSeverity("error")
                     setSnackbarMessage(
                         "Oops something went wrong in fetching incoming requests data! Please reload"
                     )
-                    setIsSnackbarOpen(true)
                 }
             } catch (error) {
-                fetched = false
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
                     "Oops something went wrong in fetching incoming requests data! Please reload"
                 )
-                setIsSnackbarOpen(true)
             }
-
-            if (fetched) {
-                try {
-                    const incomingRequestsResp = await axios({
-                        method: "get",
-                        url: "/api/requests/outgoing",
-                        headers: {
-                            Authorization: "Bearer " + cookies.token,
-                        },
-                    })
-                    if (!("error" in incomingRequestsResp.data)) {
-                        setOutgoingData(incomingRequestsResp.data.data)
-                    } else {
-                        fetched = false
-                        setSnackbarSeverity("error")
-                        setSnackbarMessage(
-                            "Oops something went wrong in fetching outgoing requests data! Please reload"
-                        )
-                        setIsSnackbarOpen(true)
-                    }
-                } catch (error) {
-                    fetched = false
-                    setSnackbarSeverity("error")
-                    setSnackbarMessage(
-                        "Oops something went wrong in fetching outgoing requests data! Please reload"
-                    )
-                    setIsSnackbarOpen(true)
-                }
-            }
-
-            if (fetched) {
-                setSnackbarSeverity("success")
-                setSnackbarMessage("All data fetched successfully!")
-                setIsSnackbarOpen(true)
-            }
+            setIsSnackbarOpen(true)
         }
         innerFunction()
     }, [])
@@ -181,8 +145,68 @@ const RequestsScreen = ({ drawerWidth }) => {
         setMobileOpen(!mobileOpen)
     }
 
-    const handleChangeTab = (event, newTabValue) => {
+    const handleChangeTab = async (event, newTabValue) => {
         setTabValue(newTabValue)
+        if (newTabValue == 0) {
+            setPendingData(null)
+            setHistoryData(null)
+            try {
+                const incomingRequestsResp = await axios({
+                    method: "get",
+                    url: "/api/requests/incoming",
+                    headers: {
+                        Authorization: "Bearer " + cookies.token,
+                    },
+                })
+                if (!("error" in incomingRequestsResp.data)) {
+                    setPendingData(incomingRequestsResp.data.data[0])
+                    setHistoryData(incomingRequestsResp.data.data[1])
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(
+                        "Incoming requests data fetched successfully!"
+                    )
+                } else {
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching incoming requests data! Please reload"
+                    )
+                }
+            } catch (error) {
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    "Oops something went wrong in fetching incoming requests data! Please reload"
+                )
+            }
+        } else if (newTabValue == 1) {
+            setOutgoingData(null)
+            try {
+                const incomingRequestsResp = await axios({
+                    method: "get",
+                    url: "/api/requests/outgoing",
+                    headers: {
+                        Authorization: "Bearer " + cookies.token,
+                    },
+                })
+                if (!("error" in incomingRequestsResp.data)) {
+                    setOutgoingData(incomingRequestsResp.data.data)
+                    setSnackbarSeverity("success")
+                    setSnackbarMessage(
+                        "Outgoing requests data fetched successfully!"
+                    )
+                } else {
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching outgoing requests data! Please reload"
+                    )
+                }
+            } catch (error) {
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    "Oops something went wrong in fetching outgoing requests data! Please reload"
+                )
+            }
+        }
+        setIsSnackbarOpen(true)
     }
 
     const handleChangePage1 = (event, newPage) => {
