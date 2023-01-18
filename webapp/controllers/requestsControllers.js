@@ -143,7 +143,7 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
                         await generateProof({ netWorth, threshold })
                     )
                     const uploadingFileResult = await upload(
-                        `proof_${Date.now()}.txt`,
+                        `proof.txt`,
                         callData
                     )
                     if (uploadingFileResult.success) {
@@ -247,6 +247,7 @@ const getOutgoingRequestsFunc = async (username, privateKey) => {
                         status: metadata.status == 0 ? "Pending" : "Rejected",
                         result: "-",
                         cid: "",
+                        isLoading: false,
                     })
                 } else {
                     outgoingRequests.push({
@@ -260,6 +261,7 @@ const getOutgoingRequestsFunc = async (username, privateKey) => {
                             ? "Net worth is equal to or above threshold amount"
                             : "Net worth is below threshold amount",
                         cid: metadata.proof,
+                        isLoading: false,
                     })
                 }
             })

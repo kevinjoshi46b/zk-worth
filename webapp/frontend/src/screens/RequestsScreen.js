@@ -287,7 +287,8 @@ const RequestsScreen = ({ drawerWidth }) => {
                     threshold: sRThreshold,
                     status: "Pending",
                     result: "-",
-                    proof: "",
+                    cid: "",
+                    isLoading: false,
                 })
                 newOutgoingData.reverse()
                 setOutgoingData(newOutgoingData)
@@ -398,6 +399,46 @@ const RequestsScreen = ({ drawerWidth }) => {
             setPendingData(newPendingData)
             setIsSnackbarOpen(true)
         }
+    }
+
+    const downloadProof = async (cid) => {
+        let newOutgoingData = outgoingData
+        for (let i = 0; i < newOutgoingData.length; i++) {
+            if (newOutgoingData[i].cid == cid) {
+                newOutgoingData[i].isLoading = true
+            }
+        }
+        setOutgoingData(newOutgoingData)
+        try {
+            const resp = await axios({
+                method: "get",
+                url: "https://" + cid + ".ipfs.w3s.link/proof.txt",
+            })
+            const element = document.createElement("a")
+            const file = new Blob([resp.data], {
+                type: "text/plain",
+            })
+            element.href = URL.createObjectURL(file)
+            element.download = "Proof_" + cid + ".txt"
+            document.body.appendChild(element)
+            element.click()
+            URL.revokeObjectURL(element.href)
+            element.remove()
+            setSnackbarSeverity("success")
+            setSnackbarMessage("Proof downloading successfully!")
+        } catch (error) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                "Oops something went wrong in downloading proof! Please try again"
+            )
+        }
+        setIsSnackbarOpen(true)
+        for (let i = 0; i < newOutgoingData.length; i++) {
+            if (newOutgoingData[i].cid == cid) {
+                newOutgoingData[i].isLoading = false
+            }
+        }
+        setOutgoingData(newOutgoingData)
     }
 
     return (
@@ -1709,16 +1750,23 @@ const RequestsScreen = ({ drawerWidth }) => {
                                                                                         "Rejected" ? (
                                                                                         ""
                                                                                     ) : (
-                                                                                        // Download proof functionality to be added here
-                                                                                        <Button
+                                                                                        <LoadingButton
                                                                                             variant="contained"
                                                                                             color="secondary"
                                                                                             startIcon={
                                                                                                 <DownloadIcon />
                                                                                             }
+                                                                                            onClick={() =>
+                                                                                                downloadProof(
+                                                                                                    row.cid
+                                                                                                )
+                                                                                            }
+                                                                                            loading={
+                                                                                                row.isLoading
+                                                                                            }
                                                                                         >
                                                                                             Proof
-                                                                                        </Button>
+                                                                                        </LoadingButton>
                                                                                     )
                                                                                 ) : (
                                                                                     ""
