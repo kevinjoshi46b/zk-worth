@@ -25,6 +25,12 @@ import Topbar from "../components/Topbar"
 import Snackbar from "@mui/material/Snackbar"
 import Alert from "@mui/material/Alert"
 import { useCookies } from "react-cookie"
+import axios from "axios"
+import Modal from "@mui/material/Modal"
+import TextField from "@mui/material/TextField"
+import LoadingButton from "@mui/lab/LoadingButton"
+import { ethers } from "ethers"
+import zKWorthPolygonMumbai from "../contracts/zKWorthPolygonMumbai.json"
 
 const TabPanel = (props) => {
     const { children, value, index, ...other } = props
@@ -90,8 +96,11 @@ const RequestsScreen = ({ drawerWidth }) => {
         { id: "result", label: "Result" },
         { id: "proof", label: "", align: "right" },
     ]
+    const [openModal, setOpenModal] = useState(false)
+    const [sRUsername, setSRUsername] = useState("")
+    const [sRThreshold, setSRThreshold] = useState("")
+    const [submitLoading, setSubmitLoading] = useState(false)
 
-    // Update this to fetch requests
     useEffect(() => {
         if (cookies.snackbar) {
             setSnackbarSeverity(cookies.snackbar.snackbarSeverity)
@@ -99,42 +108,73 @@ const RequestsScreen = ({ drawerWidth }) => {
             setIsSnackbarOpen(true)
             removeCookie("snackbar", { path: "/" })
         }
-        setTimeout(() => {
-            setPendingData([
-                {
-                    username: "devansh",
-                    threshold: "10000",
-                },
-            ])
-            setHistoryData([
-                // {
-                //     username: "kaushal",
-                //     threshold: "42000",
-                //     action: "Accepted",
-                //     response: "Net worth is below threshold amount",
-                // },
-                // {
-                //     username: "rajas",
-                //     threshold: "1000",
-                //     action: "Rejected",
-                //     response: "-",
-                // },
-            ])
-            setOutgoingData([
-                {
-                    username: "sparsh",
-                    threshold: "10100",
-                    result: "Net worth is equal to or above threshold amount",
-                    status: "Accepted",
-                },
-                {
-                    username: "hardik",
-                    threshold: "2200",
-                    result: "-",
-                    status: "Pending",
-                },
-            ])
-        }, 3000)
+        const innerFunction = async () => {
+            let fetched = true
+
+            try {
+                const incomingRequestsResp = await axios({
+                    method: "get",
+                    url: "/api/requests/incoming",
+                    headers: {
+                        Authorization: "Bearer " + cookies.token,
+                    },
+                })
+                if (!("error" in incomingRequestsResp.data)) {
+                    setPendingData(incomingRequestsResp.data.data[0])
+                    setHistoryData(incomingRequestsResp.data.data[1])
+                } else {
+                    fetched = false
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching incoming requests data! Please reload"
+                    )
+                    setIsSnackbarOpen(true)
+                }
+            } catch (error) {
+                fetched = false
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    "Oops something went wrong in fetching incoming requests data! Please reload"
+                )
+                setIsSnackbarOpen(true)
+            }
+
+            if (fetched) {
+                try {
+                    const incomingRequestsResp = await axios({
+                        method: "get",
+                        url: "/api/requests/outgoing",
+                        headers: {
+                            Authorization: "Bearer " + cookies.token,
+                        },
+                    })
+                    if (!("error" in incomingRequestsResp.data)) {
+                        setOutgoingData(incomingRequestsResp.data.data)
+                    } else {
+                        fetched = false
+                        setSnackbarSeverity("error")
+                        setSnackbarMessage(
+                            "Oops something went wrong in fetching outgoing requests data! Please reload"
+                        )
+                        setIsSnackbarOpen(true)
+                    }
+                } catch (error) {
+                    fetched = false
+                    setSnackbarSeverity("error")
+                    setSnackbarMessage(
+                        "Oops something went wrong in fetching outgoing requests data! Please reload"
+                    )
+                    setIsSnackbarOpen(true)
+                }
+            }
+
+            if (fetched) {
+                setSnackbarSeverity("success")
+                setSnackbarMessage("All data fetched successfully!")
+                setIsSnackbarOpen(true)
+            }
+        }
+        innerFunction()
     }, [])
 
     const handleDrawerToggle = () => {
@@ -174,6 +214,190 @@ const RequestsScreen = ({ drawerWidth }) => {
 
     const closeSnackBar = () => {
         setIsSnackbarOpen(false)
+    }
+
+    const sendRequest = async () => {
+        setSubmitLoading(true)
+        if (sRUsername == "") {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Username not provided!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const providerContract = new ethers.Contract(
+            zKWorthPolygonMumbai.address,
+            zKWorthPolygonMumbai.abi,
+            provider
+        )
+        if (await providerContract.isUniqueUsername(sRUsername)) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Provided username doesn't exist!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        for (let i = 0; i < outgoingData.length; i++) {
+            if (
+                outgoingData[i].username == sRUsername &&
+                outgoingData[i].status == "Pending"
+            ) {
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    "A request with a pending response has already been sent to the user!"
+                )
+                setIsSnackbarOpen(true)
+                setSubmitLoading(false)
+                return
+            }
+        }
+        if (
+            isNaN(Number(sRThreshold)) ||
+            !Number.isInteger(Number(sRThreshold))
+        ) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Threshold amount is not an integer!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        if (Number(sRThreshold) < 0) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Threshold amount cannot be negative!")
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+            return
+        }
+        try {
+            const resp = await axios({
+                method: "post",
+                url: "/api/requests/outgoing",
+                headers: { Authorization: "Bearer " + cookies.token },
+                data: {
+                    receiver: sRUsername,
+                    threshold: sRThreshold,
+                },
+            })
+            if (!("error" in resp.data)) {
+                let newOutgoingData = outgoingData
+                newOutgoingData.reverse()
+                newOutgoingData.push({
+                    username: sRUsername,
+                    threshold: sRThreshold,
+                    status: "Pending",
+                    result: "-",
+                    proof: "",
+                })
+                newOutgoingData.reverse()
+                setOutgoingData(newOutgoingData)
+                setSRUsername("")
+                setSRThreshold("")
+                setSnackbarSeverity("success")
+                setSnackbarMessage(resp.data.message)
+                setOpenModal(false)
+            } else {
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    (resp.data.error ? resp.data.error : "") +
+                        ": " +
+                        (resp.data.message ? resp.data.message : "")
+                )
+            }
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+        } catch (error) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                "Oops something went wrong in sending request! Please try again"
+            )
+            setIsSnackbarOpen(true)
+            setSubmitLoading(false)
+        }
+    }
+
+    const updateRequest = async (id, sender, status, threshold) => {
+        let newPendingData = pendingData
+        for (let i = 0; i < newPendingData.length; i++) {
+            if (newPendingData[i].id == id) {
+                newPendingData[i].isLoading = true
+            }
+        }
+        setPendingData(newPendingData)
+        try {
+            const resp = await axios({
+                method: "post",
+                url: "/api/requests/incoming",
+                headers: { Authorization: "Bearer " + cookies.token },
+                data: {
+                    id,
+                    sender,
+                    status,
+                },
+            })
+            if (!("error" in resp.data)) {
+                newPendingData = []
+                for (let i = 0; i < pendingData.length; i++) {
+                    if (pendingData[i].id != id) {
+                        newPendingData.push(pendingData[i])
+                    }
+                }
+                setPendingData(newPendingData)
+                const updatedData = {
+                    id,
+                    username: sender,
+                    threshold,
+                    action: status == 1 ? "Accepted" : "Rejected",
+                    response:
+                        status == 1
+                            ? resp.data.data == 1
+                                ? "Net worth is equal to or above threshold amount"
+                                : "Net worth is below threshold amount"
+                            : "-",
+                }
+                let pushed = false
+                let newHistoryData = []
+                for (let i = 0; i < historyData.length; i++) {
+                    if (!pushed && id > historyData[i].id) {
+                        pushed = true
+                        newHistoryData.push(updatedData)
+                    }
+                    newHistoryData.push(historyData[i])
+                }
+                if (!pushed) {
+                    newHistoryData.push(updatedData)
+                }
+                setHistoryData(newHistoryData)
+                setSnackbarSeverity("success")
+                setSnackbarMessage(resp.data.message)
+            } else {
+                setSnackbarSeverity("error")
+                setSnackbarMessage(
+                    (resp.data.error ? resp.data.error : "") +
+                        ": " +
+                        (resp.data.message ? resp.data.message : "")
+                )
+                for (let i = 0; i < newPendingData.length; i++) {
+                    if (newPendingData[i].id == id) {
+                        newPendingData[i].isLoading = false
+                    }
+                }
+                setPendingData(newPendingData)
+            }
+            setIsSnackbarOpen(true)
+        } catch (error) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                "Oops something went wrong in updating request! Please try again"
+            )
+            for (let i = 0; i < newPendingData.length; i++) {
+                if (newPendingData[i].id == id) {
+                    newPendingData[i].isLoading = false
+                }
+            }
+            setPendingData(newPendingData)
+            setIsSnackbarOpen(true)
+        }
     }
 
     return (
@@ -623,8 +847,7 @@ const RequestsScreen = ({ drawerWidth }) => {
                                                                                                 "end",
                                                                                         }}
                                                                                     >
-                                                                                        {/* Accept/reject request functionality to be added */}
-                                                                                        <Button
+                                                                                        <LoadingButton
                                                                                             variant="contained"
                                                                                             color="success"
                                                                                             startIcon={
@@ -633,18 +856,40 @@ const RequestsScreen = ({ drawerWidth }) => {
                                                                                             sx={{
                                                                                                 mr: "6px",
                                                                                             }}
+                                                                                            onClick={() => {
+                                                                                                updateRequest(
+                                                                                                    row.id,
+                                                                                                    row.username,
+                                                                                                    1,
+                                                                                                    row.threshold
+                                                                                                )
+                                                                                            }}
+                                                                                            loading={
+                                                                                                row.isLoading
+                                                                                            }
                                                                                         >
                                                                                             Accept
-                                                                                        </Button>
-                                                                                        <Button
+                                                                                        </LoadingButton>
+                                                                                        <LoadingButton
                                                                                             variant="contained"
                                                                                             color="error"
                                                                                             startIcon={
                                                                                                 <CloseIcon />
                                                                                             }
+                                                                                            onClick={() => {
+                                                                                                updateRequest(
+                                                                                                    row.id,
+                                                                                                    row.username,
+                                                                                                    -1,
+                                                                                                    row.threshold
+                                                                                                )
+                                                                                            }}
+                                                                                            loading={
+                                                                                                row.isLoading
+                                                                                            }
                                                                                         >
                                                                                             Reject
-                                                                                        </Button>
+                                                                                        </LoadingButton>
                                                                                     </Box>
                                                                                 ) : (
                                                                                     ""
@@ -999,15 +1244,95 @@ const RequestsScreen = ({ drawerWidth }) => {
                                 mt: "24px",
                             }}
                         >
-                            {/* Send request page/functionality to be added here */}
                             <Button
                                 variant="contained"
                                 color="primary"
                                 startIcon={<SendIcon />}
+                                onClick={() => setOpenModal(true)}
                             >
                                 Send Request
                             </Button>
                         </Box>
+                        <Modal
+                            open={openModal}
+                            onClose={() => setOpenModal(false)}
+                            aria-labelledby="Send Request"
+                            aria-describedby="Sending new request"
+                            sx={{ zIndex: 50 }}
+                        >
+                            <Box
+                                sx={{
+                                    width: "320px",
+                                    backgroundColor:
+                                        theme.palette.mode === "dark"
+                                            ? "#1E1E1E"
+                                            : "#F5F5F5",
+                                    borderRadius: 4,
+                                    padding: "20px",
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    boxShadow: 24,
+                                }}
+                            >
+                                {submitLoading ? (
+                                    <>
+                                        <TextField
+                                            value={sRUsername}
+                                            id="sRUsername"
+                                            label="Username"
+                                            sx={{ width: "100%", mb: "20px" }}
+                                            disabled
+                                        />
+                                        <TextField
+                                            value={sRThreshold}
+                                            id="sRThreshold"
+                                            label="Threshold Amount (in $)"
+                                            sx={{ width: "100%", mb: "20px" }}
+                                            disabled
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <TextField
+                                            value={sRUsername}
+                                            id="sRUsername"
+                                            label="Username"
+                                            sx={{ width: "100%", mb: "20px" }}
+                                            onChange={(e) =>
+                                                setSRUsername(e.target.value)
+                                            }
+                                        />
+                                        <TextField
+                                            value={sRThreshold}
+                                            id="sRThreshold"
+                                            label="Threshold Amount (in $)"
+                                            sx={{ width: "100%", mb: "20px" }}
+                                            onChange={(e) =>
+                                                setSRThreshold(e.target.value)
+                                            }
+                                        />
+                                    </>
+                                )}
+                                <LoadingButton
+                                    onClick={() => sendRequest()}
+                                    loading={submitLoading}
+                                    loadingPosition="start"
+                                    startIcon={<SendIcon />}
+                                    variant="contained"
+                                    sx={{
+                                        borderRadius: 2,
+                                        fontWeight: "bold",
+                                        width: "280px",
+                                        paddingY: "10px",
+                                        mt: "20px",
+                                    }}
+                                >
+                                    Send Request
+                                </LoadingButton>
+                            </Box>
+                        </Modal>
                         <Box
                             sx={{
                                 mt: "24px",
@@ -1382,7 +1707,7 @@ const RequestsScreen = ({ drawerWidth }) => {
                                                                                         "Pending" ||
                                                                                     row.status ==
                                                                                         "Rejected" ? (
-                                                                                        "-"
+                                                                                        ""
                                                                                     ) : (
                                                                                         // Download proof functionality to be added here
                                                                                         <Button

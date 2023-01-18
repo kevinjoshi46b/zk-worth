@@ -14,6 +14,7 @@ import { encrypt, decrypt } from "../utils/cryptography.js"
 import { netWorthCalculator } from "../utils/netWorthCalculator.js"
 import { generateProof, generateCallData } from "../utils/zkp.js"
 import { upload } from "../utils/ipfs.js"
+import { ethers } from "ethers"
 
 const getIncomingRequestsController = expressAsyncHandler(
     async (req, res, next) => {
@@ -22,12 +23,13 @@ const getIncomingRequestsController = expressAsyncHandler(
         )
         if (fetchIncomingRequests.success) {
             let incomingRequestsIds = fetchIncomingRequests.result
-            incomingRequestsIds.forEach((id, index) => {
-                incomingRequestsIds[index] = decrypt(
-                    req.user.username.privateKey,
-                    id
+            let incomingRequestsIdsTemp = []
+            incomingRequestsIds.forEach((id) => {
+                incomingRequestsIdsTemp.push(
+                    decrypt(req.user.username.privateKey, id)
                 )
             })
+            incomingRequestsIds = incomingRequestsIdsTemp
             const fetchedIncomingRequestsMetadata = await getRequestMetadatas(
                 incomingRequestsIds
             )
@@ -46,9 +48,11 @@ const getIncomingRequestsController = expressAsyncHandler(
                                     metadata.threshold,
                                     0
                                 ),
+                                isLoading: false,
                             })
                         } else {
                             incomingRequests[1].push({
+                                id: incomingRequestsIds[index],
                                 username: decrypt(
                                     req.user.username.privateKey,
                                     metadata.sender
@@ -71,6 +75,8 @@ const getIncomingRequestsController = expressAsyncHandler(
                         }
                     }
                 )
+                incomingRequests[0].reverse()
+                incomingRequests[1].reverse()
                 return res.status(200).json({
                     message: "Incoming requests fetched successfully!",
                     data: incomingRequests,
@@ -110,7 +116,7 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
             message: "Satus is not provided",
         })
     }
-    if (!(status in [1, -1])) {
+    if (!(status == 1 || status == -1)) {
         return res.status(200).json({
             error: "Incorrect data",
             message: "Satus value is incorrect",
@@ -143,7 +149,7 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
                     if (uploadingFileResult.success) {
                         const setRequestMetadataResponse =
                             await setRequestMetadata(
-                                requestMetadata.id,
+                                id,
                                 requestMetadata.sender,
                                 requestMetadata.receiver,
                                 requestMetadata.threshold,
@@ -154,6 +160,7 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
                         if (setRequestMetadataResponse.success) {
                             return res.status(200).json({
                                 message: "Request accepted successfully!",
+                                data: netWorth < threshold ? 0 : 1,
                             })
                         } else {
                             return res.status(200).json({
@@ -175,7 +182,7 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
                 }
             } else {
                 const setRequestMetadataResponse = await setRequestMetadata(
-                    requestMetadata.id,
+                    id,
                     requestMetadata.sender,
                     requestMetadata.receiver,
                     requestMetadata.threshold,
@@ -215,79 +222,78 @@ const updateRequestController = expressAsyncHandler(async (req, res, next) => {
     }
 })
 
-const getOutgoingRequestsController = expressAsyncHandler(
-    async (req, res, next) => {
-        const fetchOutgoingRequests = await getOutgoingRequests(
-            req.user.username.username
+const getOutgoingRequestsFunc = async (username, privateKey) => {
+    const fetchOutgoingRequests = await getOutgoingRequests(username)
+    if (fetchOutgoingRequests.success) {
+        let outgoingRequestsIds = fetchOutgoingRequests.result
+        let outgoingRequestsIdsTemp = []
+        outgoingRequestsIds.forEach((id) => {
+            outgoingRequestsIdsTemp.push(decrypt(privateKey, id))
+        })
+        outgoingRequestsIds = outgoingRequestsIdsTemp
+        const fetchedOutgoingRequestsMetadata = await getRequestMetadatas(
+            outgoingRequestsIds
         )
-        if (fetchOutgoingRequests.success) {
-            let outgoingRequestsIds = fetchOutgoingRequests.result
-            outgoingRequestsIds.forEach((id, index) => {
-                outgoingRequestsIds[index] = decrypt(
-                    req.user.username.privateKey,
-                    id
-                )
+        if (fetchedOutgoingRequestsMetadata.success) {
+            let outgoingRequests = []
+            fetchedOutgoingRequestsMetadata.result.forEach((metadata) => {
+                if (metadata.status == 0 || metadata.status == -1) {
+                    outgoingRequests.push({
+                        username: decrypt(privateKey, metadata.receiver),
+                        threshold: ethers.utils.formatUnits(
+                            metadata.threshold,
+                            0
+                        ),
+                        status: metadata.status == 0 ? "Pending" : "Rejected",
+                        result: "-",
+                        cid: "",
+                    })
+                } else {
+                    outgoingRequests.push({
+                        username: decrypt(privateKey, metadata.receiver),
+                        threshold: ethers.utils.formatUnits(
+                            metadata.threshold,
+                            0
+                        ),
+                        status: "Accepted",
+                        result: metadata.result
+                            ? "Net worth is equal to or above threshold amount"
+                            : "Net worth is below threshold amount",
+                        cid: metadata.proof,
+                    })
+                }
             })
-            const fetchedOutgoingRequestsMetadata = await getRequestMetadatas(
-                outgoingRequestsIds
-            )
-            if (fetchedOutgoingRequestsMetadata.success) {
-                let outgoingRequests = []
-                fetchedOutgoingRequestsMetadata.result.forEach((metadata) => {
-                    if (metadata.status == 0 || metadata.status == -1) {
-                        outgoingRequests.push({
-                            username: decrypt(
-                                req.user.username.privateKey,
-                                metadata.receiver
-                            ),
-                            threshold: ethers.utils.formatUnits(
-                                metadata.threshold,
-                                0
-                            ),
-                            status:
-                                metadata.status == 0 ? "Pending" : "Rejected",
-                            result: "-",
-                            proof: "-",
-                        })
-                    } else {
-                        outgoingRequests.push({
-                            username: decrypt(
-                                req.user.username.privateKey,
-                                metadata.receiver
-                            ),
-                            threshold: ethers.utils.formatUnits(
-                                metadata.threshold,
-                                0
-                            ),
-                            status: "Accepted",
-                            result: metadata.result
-                                ? "Net worth is equal to or above threshold amount"
-                                : "Net worth is below threshold amount",
-                            proof: metadata.proof,
-                        })
-                    }
-                })
-                return res.status(200).json({
-                    message: "Outgoing requests fetched successfully!",
-                    data: outgoingRequests,
-                })
-            } else {
-                return res.status(200).json({
-                    error: "Fetching outgoing requests from blockchain failed",
-                    message: "Please try again",
-                })
+            outgoingRequests.reverse()
+            return {
+                message: "Outgoing requests fetched successfully!",
+                data: outgoingRequests,
             }
         } else {
-            return res.status(200).json({
+            return {
                 error: "Fetching outgoing requests from blockchain failed",
                 message: "Please try again",
-            })
+            }
         }
+    } else {
+        return {
+            error: "Fetching outgoing requests from blockchain failed",
+            message: "Please try again",
+        }
+    }
+}
+
+const getOutgoingRequestsController = expressAsyncHandler(
+    async (req, res, next) => {
+        const result = await getOutgoingRequestsFunc(
+            req.user.username.username,
+            req.user.username.privateKey
+        )
+        return res.status(200).json(result)
     }
 )
 
 const setRequestController = expressAsyncHandler(async (req, res, next) => {
-    const { receiver, threshold } = req.body
+    let { receiver, threshold } = req.body
     if (receiver == undefined) {
         return res.status(200).json({
             error: "Data missing",
@@ -307,16 +313,46 @@ const setRequestController = expressAsyncHandler(async (req, res, next) => {
             message: "Please enter correct username",
         })
     }
+    const outgoingRequests = await getOutgoingRequestsFunc(
+        req.user.username.username,
+        req.user.username.privateKey
+    )
+    if (!("error" in outgoingRequests)) {
+        for (let i = 0; i < outgoingRequests.data.length; i++) {
+            if (
+                outgoingRequests.data[i].username == receiver &&
+                outgoingRequests.data[i].status == "Pending"
+            ) {
+                return res.status(200).json({
+                    error: "Request couldn't be sent",
+                    message:
+                        "A request with a pending response has already been sent to the user!",
+                })
+            }
+        }
+    } else {
+        return res.status(200).json({
+            error: "Request couldn't be sent",
+            message: "Please try again",
+        })
+    }
     if (threshold == undefined) {
         return res.status(200).json({
             error: "Data missing",
             message: "Threshold amount is not provided",
         })
     }
+    if (isNaN(Number(threshold)) || !Number.isInteger(Number(threshold))) {
+        return res.status(200).json({
+            error: "Invalid threshold amount",
+            message: "Threshold amount is not an integer",
+        })
+    }
+    threshold = Number(threshold)
     if (threshold < 0) {
         return res.status(200).json({
             error: "Invalid threshold amount",
-            message: "Threshold amount cannot be less than 0",
+            message: "Threshold amount cannot be negative",
         })
     }
     const senderPublicKeyResult = await getPublicKey(req.user.username.username)
