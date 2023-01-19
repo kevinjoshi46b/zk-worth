@@ -272,11 +272,11 @@ const SignupScreen = () => {
                     Message Signed:
                     {signedMessage ? (
                         <Typography sx={{ color: "green", ml: "6px" }}>
-                            YES
+                            Yes
                         </Typography>
                     ) : (
                         <Typography sx={{ color: "red", ml: "6px" }}>
-                            NO
+                            No
                         </Typography>
                     )}
                 </Typography>
