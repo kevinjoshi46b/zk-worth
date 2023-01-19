@@ -31,6 +31,9 @@ import TextField from "@mui/material/TextField"
 import LoadingButton from "@mui/lab/LoadingButton"
 import { ethers } from "ethers"
 import zKWorthPolygonMumbai from "../contracts/zKWorthPolygonMumbai.json"
+import verifierPolygonMumbai from "../contracts/verifierPolygonMumbai.json"
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser"
+import FileUploadIcon from "@mui/icons-material/FileUpload"
 
 const TabPanel = (props) => {
     const { children, value, index, ...other } = props
@@ -96,10 +99,15 @@ const RequestsScreen = ({ drawerWidth }) => {
         { id: "result", label: "Result" },
         { id: "proof", label: "", align: "right" },
     ]
-    const [openModal, setOpenModal] = useState(false)
+    const [openModalSendRequest, setOpenModalSendRequest] = useState(false)
     const [sRUsername, setSRUsername] = useState("")
     const [sRThreshold, setSRThreshold] = useState("")
     const [submitLoading, setSubmitLoading] = useState(false)
+    const [openModalVerifyProof, setOpenModalVerifyProof] = useState(false)
+    const [verifying, setVerifying] = useState(false)
+    const [proofFileName, setProofFileName] = useState("")
+    const [proof, setProof] = useState()
+    const [verifyProofResult, setVerifyProofResult] = useState(null)
 
     useEffect(() => {
         if (cookies.snackbar) {
@@ -140,10 +148,6 @@ const RequestsScreen = ({ drawerWidth }) => {
         }
         innerFunction()
     }, [])
-
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen)
-    }
 
     const handleChangeTab = async (event, newTabValue) => {
         setTabValue(newTabValue)
@@ -207,6 +211,10 @@ const RequestsScreen = ({ drawerWidth }) => {
             }
         }
         setIsSnackbarOpen(true)
+    }
+
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen)
     }
 
     const handleChangePage1 = (event, newPage) => {
@@ -320,7 +328,7 @@ const RequestsScreen = ({ drawerWidth }) => {
                 setSRThreshold("")
                 setSnackbarSeverity("success")
                 setSnackbarMessage(resp.data.message)
-                setOpenModal(false)
+                setOpenModalSendRequest(false)
             } else {
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
@@ -463,6 +471,56 @@ const RequestsScreen = ({ drawerWidth }) => {
             }
         }
         setOutgoingData(newOutgoingData)
+    }
+
+    function uploadProofFile(event) {
+        const fileNameSplit = event.target.files[0].name.split(".")
+        if (fileNameSplit[fileNameSplit.length - 1] == "txt") {
+            setProof(event.target.files[0])
+            setProofFileName(event.target.files[0].name)
+        } else {
+            setSnackbarSeverity("error")
+            setSnackbarMessage(
+                "Only .txt file can be uploaded! Make sure you are uploading the correct proof file"
+            )
+            setIsSnackbarOpen(true)
+        }
+    }
+
+    const verifyProof = async () => {
+        setVerifying(true)
+        if (proof == undefined) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Proof file not provided!")
+            setIsSnackbarOpen(true)
+            setVerifying(false)
+            return
+        }
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const providerContract = new ethers.Contract(
+                verifierPolygonMumbai.address,
+                verifierPolygonMumbai.abi,
+                provider
+            )
+            const proofText = await proof.text()
+            const splitProof = proofText.split(",[")
+            setVerifyProofResult(
+                await providerContract.verifyProof(
+                    JSON.parse(splitProof[0]),
+                    JSON.parse("[" + splitProof[1] + ",[" + splitProof[2]),
+                    JSON.parse("[" + splitProof[3]),
+                    JSON.parse("[" + splitProof[4])
+                )
+            )
+            setSnackbarSeverity("success")
+            setSnackbarMessage("Proof verified successfully!")
+        } catch (error) {
+            setSnackbarSeverity("error")
+            setSnackbarMessage("Couldn't verify proof! Please try again")
+        }
+        setIsSnackbarOpen(true)
+        setVerifying(false)
     }
 
     return (
@@ -1311,16 +1369,145 @@ const RequestsScreen = ({ drawerWidth }) => {
                         >
                             <Button
                                 variant="contained"
+                                color="success"
+                                startIcon={<VerifiedUserIcon />}
+                                sx={{ mr: "8px" }}
+                                onClick={() => setOpenModalVerifyProof(true)}
+                            >
+                                Verify Proof
+                            </Button>
+                            <Button
+                                variant="contained"
                                 color="primary"
                                 startIcon={<SendIcon />}
-                                onClick={() => setOpenModal(true)}
+                                onClick={() => setOpenModalSendRequest(true)}
                             >
                                 Send Request
                             </Button>
                         </Box>
                         <Modal
-                            open={openModal}
-                            onClose={() => setOpenModal(false)}
+                            open={openModalVerifyProof}
+                            onClose={() => {
+                                setOpenModalVerifyProof(false)
+                                setVerifyProofResult(null)
+                                setProofFileName("")
+                                setProof(undefined)
+                            }}
+                            aria-labelledby="Verify Proof"
+                            aria-describedby="Verifying request proofs"
+                            sx={{ zIndex: 50 }}
+                        >
+                            <Box
+                                sx={{
+                                    width: "320px",
+                                    backgroundColor:
+                                        theme.palette.mode === "dark"
+                                            ? "#1E1E1E"
+                                            : "#F5F5F5",
+                                    borderRadius: 4,
+                                    padding: "20px",
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    boxShadow: 24,
+                                }}
+                            >
+                                <TextField
+                                    value={proofFileName}
+                                    id="proofFileName"
+                                    label="Proof"
+                                    sx={{ width: "100%" }}
+                                    disabled
+                                />
+                                <label htmlFor="proof">
+                                    <input
+                                        style={{ display: "none" }}
+                                        id="proof"
+                                        name="proof"
+                                        type="file"
+                                        accept=".txt"
+                                        onChange={uploadProofFile}
+                                    />
+                                    {verifying ? (
+                                        <LoadingButton
+                                            variant="outlined"
+                                            component="span"
+                                            sx={{
+                                                borderRadius: 2,
+                                                fontWeight: "bold",
+                                                width: "280px",
+                                                paddingY: "10px",
+                                                mt: "20px",
+                                            }}
+                                            startIcon={<FileUploadIcon />}
+                                            disabled
+                                        >
+                                            Upload Proof
+                                        </LoadingButton>
+                                    ) : (
+                                        <LoadingButton
+                                            variant="outlined"
+                                            component="span"
+                                            sx={{
+                                                borderRadius: 2,
+                                                fontWeight: "bold",
+                                                width: "280px",
+                                                paddingY: "10px",
+                                                mt: "20px",
+                                            }}
+                                            startIcon={<FileUploadIcon />}
+                                        >
+                                            Upload Proof
+                                        </LoadingButton>
+                                    )}
+                                </label>
+                                <Typography
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        mt: "20px",
+                                    }}
+                                >
+                                    Result:
+                                    {verifyProofResult == null ? (
+                                        ""
+                                    ) : verifyProofResult ? (
+                                        <Typography
+                                            sx={{ color: "green", ml: "6px" }}
+                                        >
+                                            Valid
+                                        </Typography>
+                                    ) : (
+                                        <Typography
+                                            sx={{ color: "red", ml: "6px" }}
+                                        >
+                                            Invalid
+                                        </Typography>
+                                    )}
+                                </Typography>
+                                <LoadingButton
+                                    onClick={() => verifyProof()}
+                                    loading={verifying}
+                                    loadingPosition="start"
+                                    startIcon={<VerifiedUserIcon />}
+                                    variant="contained"
+                                    color="success"
+                                    sx={{
+                                        borderRadius: 2,
+                                        fontWeight: "bold",
+                                        width: "280px",
+                                        paddingY: "10px",
+                                        mt: "20px",
+                                    }}
+                                >
+                                    Verify Proof
+                                </LoadingButton>
+                            </Box>
+                        </Modal>
+                        <Modal
+                            open={openModalSendRequest}
+                            onClose={() => setOpenModalSendRequest(false)}
                             aria-labelledby="Send Request"
                             aria-describedby="Sending new request"
                             sx={{ zIndex: 50 }}
