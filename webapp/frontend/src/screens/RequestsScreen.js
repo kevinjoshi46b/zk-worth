@@ -505,21 +505,26 @@ const RequestsScreen = ({ drawerWidth }) => {
             )
             const proofText = await proof.text()
             const splitProof = proofText.split(",[")
-            setVerifyProofResult(
-                await providerContract.verifyProof(
-                    JSON.parse(splitProof[0]),
-                    JSON.parse("[" + splitProof[1] + ",[" + splitProof[2]),
-                    JSON.parse("[" + splitProof[3]),
-                    JSON.parse("[" + splitProof[4])
-                )
+            const result = await providerContract.verifyProof(
+                JSON.parse(splitProof[0]),
+                JSON.parse("[" + splitProof[1] + ",[" + splitProof[2]),
+                JSON.parse("[" + splitProof[3]),
+                JSON.parse("[" + splitProof[4])
             )
-            setSnackbarSeverity("success")
-            setSnackbarMessage("Proof verified successfully!")
+            if (openModalVerifyProof) {
+                setVerifyProofResult(result)
+                setSnackbarSeverity("success")
+                setSnackbarMessage("Proof verified successfully!")
+            }
         } catch (error) {
-            setSnackbarSeverity("error")
-            setSnackbarMessage("Couldn't verify proof! Please try again")
+            if (openModalVerifyProof) {
+                setSnackbarSeverity("error")
+                setSnackbarMessage("Couldn't verify proof! Please try again")
+            }
         }
-        setIsSnackbarOpen(true)
+        if (openModalVerifyProof) {
+            setIsSnackbarOpen(true)
+        }
         setVerifying(false)
     }
 
