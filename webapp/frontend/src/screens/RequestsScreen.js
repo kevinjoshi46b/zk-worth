@@ -1381,14 +1381,27 @@ const RequestsScreen = ({ drawerWidth }) => {
                             >
                                 Verify Proof
                             </Button>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<SendIcon />}
-                                onClick={() => setOpenModalSendRequest(true)}
-                            >
-                                Send Request
-                            </Button>
+                            {outgoingData == null ? (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SendIcon />}
+                                    disabled
+                                >
+                                    Send Request
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SendIcon />}
+                                    onClick={() =>
+                                        setOpenModalSendRequest(true)
+                                    }
+                                >
+                                    Send Request
+                                </Button>
+                            )}
                         </Box>
                         <Modal
                             open={openModalVerifyProof}
