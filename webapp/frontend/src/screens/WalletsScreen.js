@@ -162,13 +162,18 @@ const WalletsScreen = ({ drawerWidth }) => {
         })
             .then((resp) => {
                 if (!("error" in resp.data)) {
-                    let newWalletsData = walletsData
-                    newWalletsData.push({
-                        type: "secondary",
-                        walletAddress: address,
-                        isLoading: false,
+                    setWalletsData((currentWalletsData) => {
+                        let newWalletsData = []
+                        currentWalletsData.forEach((walletData) => {
+                            newWalletsData.push(walletData)
+                        })
+                        newWalletsData.push({
+                            type: "secondary",
+                            walletAddress: address,
+                            isLoading: false,
+                        })
+                        return newWalletsData
                     })
-                    setWalletsData(newWalletsData)
                     setSnackbarSeverity("success")
                     setSnackbarMessage(resp.data.message)
                     setOpenModal(false)
@@ -194,19 +199,24 @@ const WalletsScreen = ({ drawerWidth }) => {
     }
 
     const unlinkSecondaryWalletAddress = (secondaryWalletAddress) => {
-        let newWalletsData = []
-        for (let i = 0; i < walletsData.length; i++) {
-            if (walletsData[i].walletAddress != secondaryWalletAddress) {
-                newWalletsData.push(walletsData[i])
-            } else {
-                newWalletsData.push({
-                    type: "secondary",
-                    walletAddress: secondaryWalletAddress,
-                    isLoading: true,
-                })
+        setWalletsData((currentWalletsData) => {
+            let newWalletsData = []
+            for (let i = 0; i < currentWalletsData.length; i++) {
+                if (
+                    currentWalletsData[i].walletAddress !=
+                    secondaryWalletAddress
+                ) {
+                    newWalletsData.push(currentWalletsData[i])
+                } else {
+                    newWalletsData.push({
+                        type: "secondary",
+                        walletAddress: secondaryWalletAddress,
+                        isLoading: true,
+                    })
+                }
             }
-        }
-        setWalletsData(newWalletsData)
+            return newWalletsData
+        })
         axios({
             method: "delete",
             url: "/api/wallets",
@@ -217,35 +227,39 @@ const WalletsScreen = ({ drawerWidth }) => {
         })
             .then((resp) => {
                 if (!("error" in resp.data)) {
-                    newWalletsData = []
-                    for (let i = 0; i < walletsData.length; i++) {
-                        if (
-                            walletsData[i].walletAddress !=
-                            secondaryWalletAddress
-                        ) {
-                            newWalletsData.push(walletsData[i])
+                    setWalletsData((currentWalletsData) => {
+                        let newWalletsData = []
+                        for (let i = 0; i < currentWalletsData.length; i++) {
+                            if (
+                                currentWalletsData[i].walletAddress !=
+                                secondaryWalletAddress
+                            ) {
+                                newWalletsData.push(currentWalletsData[i])
+                            }
                         }
-                    }
-                    setWalletsData(newWalletsData)
+                        return newWalletsData
+                    })
                     setSnackbarSeverity("success")
                     setSnackbarMessage(resp.data.message)
                 } else {
-                    newWalletsData = []
-                    for (let i = 0; i < walletsData.length; i++) {
-                        if (
-                            walletsData[i].walletAddress !=
-                            secondaryWalletAddress
-                        ) {
-                            newWalletsData.push(walletsData[i])
-                        } else {
-                            newWalletsData.push({
-                                type: "secondary",
-                                walletAddress: secondaryWalletAddress,
-                                isLoading: false,
-                            })
+                    setWalletsData((currentWalletsData) => {
+                        let newWalletsData = []
+                        for (let i = 0; i < currentWalletsData.length; i++) {
+                            if (
+                                currentWalletsData[i].walletAddress !=
+                                secondaryWalletAddress
+                            ) {
+                                newWalletsData.push(currentWalletsData[i])
+                            } else {
+                                newWalletsData.push({
+                                    type: "secondary",
+                                    walletAddress: secondaryWalletAddress,
+                                    isLoading: false,
+                                })
+                            }
                         }
-                    }
-                    setWalletsData(newWalletsData)
+                        return newWalletsData
+                    })
                     setSnackbarSeverity("error")
                     setSnackbarMessage(
                         (resp.data.error ? resp.data.error : "") +
@@ -256,21 +270,24 @@ const WalletsScreen = ({ drawerWidth }) => {
                 setIsSnackbarOpen(true)
             })
             .catch((error) => {
-                newWalletsData = []
-                for (let i = 0; i < walletsData.length; i++) {
-                    if (
-                        walletsData[i].walletAddress != secondaryWalletAddress
-                    ) {
-                        newWalletsData.push(walletsData[i])
-                    } else {
-                        newWalletsData.push({
-                            type: "secondary",
-                            walletAddress: secondaryWalletAddress,
-                            isLoading: false,
-                        })
+                setWalletsData((currentWalletsData) => {
+                    let newWalletsData = []
+                    for (let i = 0; i < currentWalletsData.length; i++) {
+                        if (
+                            currentWalletsData[i].walletAddress !=
+                            secondaryWalletAddress
+                        ) {
+                            newWalletsData.push(currentWalletsData[i])
+                        } else {
+                            newWalletsData.push({
+                                type: "secondary",
+                                walletAddress: secondaryWalletAddress,
+                                isLoading: false,
+                            })
+                        }
                     }
-                }
-                setWalletsData(newWalletsData)
+                    return newWalletsData
+                })
                 setSnackbarSeverity("error")
                 setSnackbarMessage(
                     "Oops something went wrong in unlinking wallet! Please try again"

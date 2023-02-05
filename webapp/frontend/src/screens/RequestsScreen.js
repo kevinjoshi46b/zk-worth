@@ -312,18 +312,21 @@ const RequestsScreen = ({ drawerWidth }) => {
                 },
             })
             if (!("error" in resp.data)) {
-                let newOutgoingData = outgoingData
-                newOutgoingData.reverse()
-                newOutgoingData.push({
-                    username: sRUsername,
-                    threshold: sRThreshold,
-                    status: "Pending",
-                    result: "-",
-                    cid: "",
-                    isLoading: false,
+                setOutgoingData((currentOutgoingData) => {
+                    let newOutgoingData = []
+                    newOutgoingData.push({
+                        username: sRUsername,
+                        threshold: sRThreshold,
+                        status: "Pending",
+                        result: "-",
+                        cid: "",
+                        isLoading: false,
+                    })
+                    currentOutgoingData.forEach((data) => {
+                        newOutgoingData.push(data)
+                    })
+                    return newOutgoingData
                 })
-                newOutgoingData.reverse()
-                setOutgoingData(newOutgoingData)
                 setSRUsername("")
                 setSRThreshold("")
                 setSnackbarSeverity("success")
@@ -350,13 +353,20 @@ const RequestsScreen = ({ drawerWidth }) => {
     }
 
     const updateRequest = async (id, sender, status, threshold) => {
-        let newPendingData = pendingData
-        for (let i = 0; i < newPendingData.length; i++) {
-            if (newPendingData[i].id == id) {
-                newPendingData[i].isLoading = true
+        setPendingData((currentPendingData) => {
+            let newPendingData = []
+            for (let i = 0; i < currentPendingData.length; i++) {
+                if (currentPendingData[i].id == id) {
+                    newPendingData.push({
+                        ...currentPendingData[i],
+                        isLoading: true,
+                    })
+                } else {
+                    newPendingData.push(currentPendingData[i])
+                }
             }
-        }
-        setPendingData(newPendingData)
+            return newPendingData
+        })
         try {
             const resp = await axios({
                 method: "post",
@@ -369,38 +379,42 @@ const RequestsScreen = ({ drawerWidth }) => {
                 },
             })
             if (!("error" in resp.data)) {
-                newPendingData = []
-                for (let i = 0; i < pendingData.length; i++) {
-                    if (pendingData[i].id != id) {
-                        newPendingData.push(pendingData[i])
+                setPendingData((currentPendingData) => {
+                    let newPendingData = []
+                    for (let i = 0; i < currentPendingData.length; i++) {
+                        if (currentPendingData[i].id != id) {
+                            newPendingData.push(currentPendingData[i])
+                        }
                     }
-                }
-                setPendingData(newPendingData)
-                const updatedData = {
-                    id,
-                    username: sender,
-                    threshold,
-                    action: status == 1 ? "Accepted" : "Rejected",
-                    response:
-                        status == 1
-                            ? resp.data.data == 1
-                                ? "Net worth is equal to or above threshold amount"
-                                : "Net worth is below threshold amount"
-                            : "-",
-                }
-                let pushed = false
-                let newHistoryData = []
-                for (let i = 0; i < historyData.length; i++) {
-                    if (!pushed && id > historyData[i].id) {
-                        pushed = true
+                    return newPendingData
+                })
+                setHistoryData((currentHistoryData) => {
+                    const updatedData = {
+                        id,
+                        username: sender,
+                        threshold,
+                        action: status == 1 ? "Accepted" : "Rejected",
+                        response:
+                            status == 1
+                                ? resp.data.data == 1
+                                    ? "Net worth is equal to or above threshold amount"
+                                    : "Net worth is below threshold amount"
+                                : "-",
+                    }
+                    let pushed = false
+                    let newHistoryData = []
+                    for (let i = 0; i < currentHistoryData.length; i++) {
+                        if (!pushed && id > currentHistoryData[i].id) {
+                            pushed = true
+                            newHistoryData.push(updatedData)
+                        }
+                        newHistoryData.push(currentHistoryData[i])
+                    }
+                    if (!pushed) {
                         newHistoryData.push(updatedData)
                     }
-                    newHistoryData.push(historyData[i])
-                }
-                if (!pushed) {
-                    newHistoryData.push(updatedData)
-                }
-                setHistoryData(newHistoryData)
+                    return newHistoryData
+                })
                 setSnackbarSeverity("success")
                 setSnackbarMessage(resp.data.message)
             } else {
@@ -410,12 +424,20 @@ const RequestsScreen = ({ drawerWidth }) => {
                         ": " +
                         (resp.data.message ? resp.data.message : "")
                 )
-                for (let i = 0; i < newPendingData.length; i++) {
-                    if (newPendingData[i].id == id) {
-                        newPendingData[i].isLoading = false
+                setPendingData((currentPendingData) => {
+                    let newPendingData = []
+                    for (let i = 0; i < currentPendingData.length; i++) {
+                        if (currentPendingData[i].id == id) {
+                            newPendingData.push({
+                                ...currentPendingData[i],
+                                isLoading: false,
+                            })
+                        } else {
+                            newPendingData.push(currentPendingData[i])
+                        }
                     }
-                }
-                setPendingData(newPendingData)
+                    return newPendingData
+                })
             }
             setIsSnackbarOpen(true)
         } catch (error) {
@@ -423,12 +445,20 @@ const RequestsScreen = ({ drawerWidth }) => {
             setSnackbarMessage(
                 "Oops something went wrong in updating request! Please try again"
             )
-            for (let i = 0; i < newPendingData.length; i++) {
-                if (newPendingData[i].id == id) {
-                    newPendingData[i].isLoading = false
+            setPendingData((currentPendingData) => {
+                let newPendingData = []
+                for (let i = 0; i < currentPendingData.length; i++) {
+                    if (currentPendingData[i].id == id) {
+                        newPendingData.push({
+                            ...currentPendingData[i],
+                            isLoading: false,
+                        })
+                    } else {
+                        newPendingData.push(currentPendingData[i])
+                    }
                 }
-            }
-            setPendingData(newPendingData)
+                return newPendingData
+            })
             setIsSnackbarOpen(true)
         }
     }
