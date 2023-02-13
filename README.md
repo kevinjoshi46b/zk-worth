@@ -12,7 +12,7 @@ It is hosted on [Render](https://render.com/), you can check it out [here](https
 
 ## Tech Used
 
-- Blockchain
+- Ethereum blockchain
 - Solidity
 - Circom 2
 - Hardhat
