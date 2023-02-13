@@ -3,4 +3,4 @@ threshold_js
 threshold.r1cs
 threshold_0000.zkey
 threshold_final.zkey
-verifier.sol
+Verifier.sol

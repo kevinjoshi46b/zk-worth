@@ -19,4 +19,4 @@ cp ./threshold_js/threshold.wasm ../webapp/utils/zkp/threshold.wasm || { exit 1;
 [ $? -eq 0 ] && echo "success: copied threshold.wasm"
 
 cp ./Verifier.sol ../hardhat-project/contracts/Verifier.sol || { exit 1; }
-[ $? -eq 0 ] && echo "success: copied verifier.sol"
+[ $? -eq 0 ] && echo "success: copied Verifier.sol"
