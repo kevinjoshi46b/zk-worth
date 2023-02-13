@@ -21,7 +21,7 @@ const main = async () => {
     console.log("Setting up price feed for ETH token:")
     console.log(
         await PriceConsumer.setFeeds(
-            ["0xBA47cF08bDFbA09E7732c0e48E12a11Cd1536bcd"],
+            ["0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa"],
             ["0x0715A7794a1dc8e42615F059dD6e406A6594651A"]
         )
     )

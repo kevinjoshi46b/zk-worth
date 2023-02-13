@@ -2,7 +2,7 @@ export const priceTokens = {
     network: "polygonMumbai",
     names: ["ETH", "MATIC", "BTC", "USDC"],
     tokens: [
-        "0xBA47cF08bDFbA09E7732c0e48E12a11Cd1536bcd",
+        "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",
         "0x0000000000000000000000000000000000000000",
         "0xaDb88FCc910aBfb2c03B49EE2087e7D6C2Ddb2E9",
         "0xe6b8a5CF854791412c1f6EFC7CAf629f5Df1c747",
