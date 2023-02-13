@@ -12,11 +12,11 @@ snarkjs zkey contribute threshold_0000.zkey threshold_final.zkey || { exit 1; }
 snarkjs zkey export solidityverifier threshold_final.zkey Verifier.sol || { exit 1; }
 [ $? -eq 0 ] && echo "success: created Verifier.sol"
 
-cp ./threshold_final.zkey ../webapp/utils/zkp/threshold_final.zkey || { exit 1; }
+mkdir -p ../webapp/utils/zkp/ && cp ./threshold_final.zkey ../webapp/utils/zkp/threshold_final.zkey || { exit 1; }
 [ $? -eq 0 ] && echo "success: copied threshold_final.zkey"
 
 cp ./threshold_js/threshold.wasm ../webapp/utils/zkp/threshold.wasm || { exit 1; }
 [ $? -eq 0 ] && echo "success: copied threshold.wasm"
 
-cp ./Verifier.sol ../hardhat-project/contracts/Verifier.sol || { exit 1; }
+mkdir -p ../hardhat-project/contracts/ && cp ./Verifier.sol ../hardhat-project/contracts/Verifier.sol || { exit 1; }
 [ $? -eq 0 ] && echo "success: copied Verifier.sol"
