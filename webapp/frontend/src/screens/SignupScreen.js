@@ -117,6 +117,7 @@ const SignupScreen = () => {
             setSnackbarSeverity("error")
             setSnackbarMessage("Message not signed!")
             setIsSnackbarOpen(true)
+            setDisableInput(false)
             setSubmitLoading(false)
             return
         }
